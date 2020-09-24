@@ -1,13 +1,14 @@
 import mpmath as mp
 import numpy as np
 import scipy.signal as ss
-from mpmath import mpf, sin, cos, exp, re, pi, ellipf, ellipe
-#from .dist import lambda_p_Gauss
+from mpmath import mpf, sin, cos, exp, re, ellipf, ellipe
+from .dist import lambda_p_Gauss
 
 def psi_s(z, x, beta):
     """
 	2D longitudinal potential
     Eq. (23) from Ref[1] with no constant factor (e*beta**2/2/rho**2).
+    Ref[1]: Y. Cai and Yuantao. Ding, PRAB 23, 014402 (2020)
     """
     z = float(z)
     x = float(x)
@@ -20,7 +21,7 @@ def psi_s(z, x, beta):
 
 def psi_x(z, x, beta):
     """
-    Eq.(24) from Ref[1] with zeta=0 and no constant factor e*beta**2/2/rho**2.
+    Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
     """
     z = float(z)
     x = float(x)
@@ -74,7 +75,7 @@ def alpha(z, x, beta):
     return re(out)
 def kappa(z,x,beta):
     """
-	Eq. (13) from Ref[1] with zeta=0
+	Eq. (13) from Ref[1] with argumaent zeta = 0
 	"""
     return ( x**2 + 4*(1+x) *sin(alpha(z,x,beta))**2 )**(1/2)
 

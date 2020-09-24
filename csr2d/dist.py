@@ -1,4 +1,4 @@
-from mpmath import exp
+from mpmath import exp, pi
 
 def lambda_p_Gauss(z, x): 
     """
@@ -6,4 +6,4 @@ def lambda_p_Gauss(z, x):
     """
     sigmaz = 10E-6 
     sigmax = 10E-6
-    return 1/(2*pi*sigmaz*sigmax)*exp(-x**2/2/sigmax**2)*exp(-z**2/2/sigmaz**2)*(-z/sigmaz**2)gg
+    return 1/(2*pi*sigmaz*sigmax)*exp(-x**2/2/sigmax**2)*exp(-z**2/2/sigmaz**2)*(-z/sigmaz**2)
