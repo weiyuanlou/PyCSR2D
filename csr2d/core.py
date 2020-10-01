@@ -93,9 +93,9 @@ def Ws(gamma,rho,sigmaz,sigmax,dz,dx):
     """
     Apply 2D convolution to compute the longitudinal wake Ws on a grid 
     Also returns the zvec and xvec which define the grid
+    
+    Still needs to improve the convolution step
     """
-    #dz = 0.09*sigmaz
-    #dx = 0.09*sigmax
     beta = (1-1/gamma**2)**(1/2)
     zvec = np.arange(-5*sigmaz, 5*sigmaz, dz)
     xvec = np.arange(-5*sigmax, 5*sigmax, dx)
@@ -105,6 +105,26 @@ def Ws(gamma,rho,sigmaz,sigmax,dz,dx):
     xvec2 = np.arange(-10*sigmax, 10*sigmax, dx)
     psi_s_list = [[psi_s(i/2/rho,j,beta) for j in xvec2] for i in zvec2]   
     psi_s_grid = np.array(psi_s_list,dtype=float)
-    conv_s=ss.convolve2d(lambdap_grid, psi_s_grid, mode='same', boundary='fill', fillvalue=0)
-    WsConv=beta**2/rho*conv_s*(dz)*(dx)
+    conv_s = ss.convolve2d(lambdap_grid, psi_s_grid, mode='same', boundary='fill', fillvalue=0)
+    WsConv = beta**2/rho*conv_s*(dz)*(dx)
     return zvec, xvec, WsConv
+
+def Wx(gamma,rho,sigmaz,sigmax,dz,dx):
+    """
+    Apply 2D convolution to compute the transverse wake Wx on a grid 
+    Also returns the zvec and xvec which define the grid
+    
+    Still needs to improve the convolution step
+    """
+    beta = (1-1/gamma**2)**(1/2)
+    zvec = np.arange(-5*sigmaz, 5*sigmaz, dz)
+    xvec = np.arange(-5*sigmax, 5*sigmax, dx)
+    lambdap_list = [[lambda_p_Gauss(i,j) for j in xvec] for i in zvec] 
+    lambdap_grid = np.array(lambdap_list,dtype=float)
+    zvec2 = np.arange(-10*sigmaz, 10*sigmaz, dz)
+    xvec2 = np.arange(-10*sigmax, 10*sigmax, dx)
+    psi_x_list = [[psi_x(i/2/rho,j,beta) for j in xvec2] for i in zvec2]   
+    psi_x_grid = np.array(psi_x_list,dtype=float)
+    conv_x = ss.convolve2d(lambdap_grid, psi_x_grid, mode='same', boundary='fill', fillvalue=0)
+    WxConv = beta**2/rho*conv_x*(dz)*(dx)
+    return zvec, xvec, WxConv
