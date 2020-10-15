@@ -1,4 +1,4 @@
-from mpmath import exp, pi
+from numpy import exp, pi
 
 def lambda_p_Gauss(z, x): 
     """
