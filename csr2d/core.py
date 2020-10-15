@@ -1,10 +1,11 @@
 import mpmath as mp
 import numpy as np
 import scipy.signal as ss
-from mpmath import mpf, sin, cos, exp, re, ellipf, ellipe
+
+from numpy import sin, cos, real, exp, pi
+from mpmath import ellipf, ellipe
 from .dist import lambda_p_Gauss
 
-from mpmath import exp, pi
 
 def lambda_p_Gauss(z, x): 
     """
@@ -16,7 +17,7 @@ def lambda_p_Gauss(z, x):
 
 def psi_s(z, x, beta):
     """
-	2D longitudinal potential
+    2D longitudinal potential
     Eq. (23) from Ref[1] with no constant factor (e*beta**2/2/rho**2).
     Ref[1]: Y. Cai and Yuantao. Ding, PRAB 23, 014402 (2020)
     """
@@ -42,7 +43,7 @@ def psi_x(z, x, beta):
         T3 = -kappa(z,x,beta) *sin(2*alpha(z,x,beta))/D
         T4 = kappa(z,x,beta) *beta**2 *(1+x) *sin(2*alpha(z,x,beta)) *cos(2*alpha(z,x,beta))/D
         T5 = 1/abs(x)*ellipf(alpha(z,x,beta),-4*(1+x)/x**2)   # psi_phi without e/rho**2 factor
-        out = re( (T1 + T2 + T3 + T4) - 2/beta**2*T5 )
+        out = real( (T1 + T2 + T3 + T4) - 2/beta**2*T5 )
     except ZeroDivisionError:
         out = 0
         #print(f"Oops!  ZeroDivisionError at (z,x)= ({z:5.2f},{x:5.2f}). Returning 0.")
@@ -82,7 +83,7 @@ def alpha(z, x, beta):
         out= 1/2*(-(2*m(z,x,beta))**(1/2) + ( -2*(m(z,x,beta) + nu(x,beta)) + 2*eta(z,x,beta)*(2*m(z,x,beta))**(-1/2) )**(1/2))
     else: 
         out= 1/2*( (2*m(z,x,beta))**(1/2) + ( -2*(m(z,x,beta) + nu(x,beta)) - 2*eta(z,x,beta)*(2*m(z,x,beta))**(-1/2) )**(1/2))
-    return re(out)
+    return real(out)
 def kappa(z,x,beta):
     """
     Eq. (13) from Ref[1] with argumaent zeta = 0
@@ -99,7 +100,7 @@ def make_2dgrid(func,zmin,zmax,dz, xmin, xmax, dx):
     list2d= [[func(i,j) for j in xvec] for i in zvec] 
     return np.array(list2d,dtype=float)
     
-def Ws(gamma,rho,sigmaz,sigmax,dz,dx):
+def WsOld(gamma,rho,sigmaz,sigmax,dz,dx):
     """
     Apply 2D convolution to compute the longitudinal wake Ws on a grid 
     Also returns the zvec and xvec which define the grid
@@ -107,6 +108,7 @@ def Ws(gamma,rho,sigmaz,sigmax,dz,dx):
     Still needs to improve the convolution step
     """
     beta = (1-1/gamma**2)**(1/2)
+    
     zvec = np.arange(-5*sigmaz, 5*sigmaz, dz)
     xvec = np.arange(-5*sigmax, 5*sigmax, dx)
     lambdap_list = [[lambda_p_Gauss(i,j) for j in xvec] for i in zvec] 
@@ -114,8 +116,9 @@ def Ws(gamma,rho,sigmaz,sigmax,dz,dx):
     
     zvec2 = np.arange(-10*sigmaz, 10*sigmaz, dz)
     xvec2 = np.arange(-10*sigmax, 10*sigmax, dx)
-    psi_s_list = [[psi_s(i/2/rho,j,beta) for j in xvec2] for i in zvec2]   
+    psi_s_list = [[psi_s(i/2/rho,j,beta) for j in xvec2] for i in zvec2] 
     psi_s_grid = np.array(psi_s_list,dtype=float)
+    
     conv_s = ss.convolve2d(lambdap_grid, psi_s_grid, mode='same', boundary='fill', fillvalue=0)
     WsConv = beta**2/rho*conv_s*(dz)*(dx)
     return zvec, xvec, WsConv
@@ -128,14 +131,17 @@ def Wx(gamma,rho,sigmaz,sigmax,dz,dx):
     Still needs to improve the convolution step
     """
     beta = (1-1/gamma**2)**(1/2)
+    
     zvec = np.arange(-5*sigmaz, 5*sigmaz, dz)
     xvec = np.arange(-5*sigmax, 5*sigmax, dx)
     lambdap_list = [[lambda_p_Gauss(i,j) for j in xvec] for i in zvec] 
     lambdap_grid = np.array(lambdap_list,dtype=float)
+    
     zvec2 = np.arange(-10*sigmaz, 10*sigmaz, dz)
     xvec2 = np.arange(-10*sigmax, 10*sigmax, dx)
     psi_x_list = [[psi_x(i/2/rho,j,beta) for j in xvec2] for i in zvec2]   
     psi_x_grid = np.array(psi_x_list,dtype=float)
+    
     conv_x = ss.convolve2d(lambdap_grid, psi_x_grid, mode='same', boundary='fill', fillvalue=0)
     WxConv = beta**2/rho*conv_x*(dz)*(dx)
     return zvec, xvec, WxConv
