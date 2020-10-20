@@ -21,8 +21,6 @@ def psi_s(z, x, beta):
     Eq. (23) from Ref[1] with no constant factor (e*beta**2/2/rho**2).
     Ref[1]: Y. Cai and Yuantao. Ding, PRAB 23, 014402 (2020)
     """
-    z = float(z)
-    x = float(x)
     try:
         out = (cos(2*alpha(z,x,beta)) - 1/(1+x)) / (kappa(z,x,beta) - beta*(1+x)*sin(2*alpha(z,x,beta)))
     except ZeroDivisionError:
@@ -75,7 +73,8 @@ def m(z, x, beta):
     Eq. (A2) from Ref[1]
     """
     return -nu(x,beta)/3 + ( zeta(z,x,beta)/3 + nu(x,beta)**2/36 ) *Omega(z,x,beta)**(-1/3) + Omega(z,x,beta)**(1/3)
-def alpha(z, x, beta):
+
+def alphaOld(z, x, beta):
     """
     Eq. (A4) from Ref[1]
     """
@@ -84,6 +83,16 @@ def alpha(z, x, beta):
     else: 
         out= 1/2*( (2*m(z,x,beta))**(1/2) + ( -2*(m(z,x,beta) + nu(x,beta)) - 2*eta(z,x,beta)*(2*m(z,x,beta))**(-1/2) )**(1/2))
     return real(out)
+
+def alpha(z, x, beta):
+    """
+    Eq. (A4) from Ref[1]
+    """
+    out1 = 1/2*(-(2*m(z,x,beta))**(1/2) + ( -2*(m(z,x,beta) + nu(x,beta)) + 2*eta(z,x,beta)*(2*m(z,x,beta))**(-1/2) )**(1/2))
+    out2 = 1/2*( (2*m(z,x,beta))**(1/2) + ( -2*(m(z,x,beta) + nu(x,beta)) - 2*eta(z,x,beta)*(2*m(z,x,beta))**(-1/2) )**(1/2))
+    
+    return np.where(z<0, real(out1), real(out2))
+
 def kappa(z,x,beta):
     """
     Eq. (13) from Ref[1] with argumaent zeta = 0
