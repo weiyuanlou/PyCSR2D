@@ -1,8 +1,9 @@
 import mpmath as mp
 import numpy as np
 import scipy.signal as ss
+import math
 
-from numpy import sin, cos, real, exp, pi
+from numpy import abs, sin, cos, real, exp, pi
 from mpmath import ellipf, ellipe
 from .dist import lambda_p_Gauss
 
@@ -32,8 +33,8 @@ def psi_x(z, x, beta):
     """
     Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
     """
-    z = float(z)
-    x = float(x)
+    #z = float(z)
+    #x = float(x)
     try:     
         T1 = 1/abs(x)/(1+x)*((2+2*x+x**2) *ellipf(alpha(z,x,beta),-4*(1+x)/x**2)  -  x**2*ellipe(alpha(z,x,beta),-4*(1+x)/x**2))
         D = kappa(z,x,beta)**2 - beta**2*(1+x)**2 *sin(2*alpha(z,x,beta))**2
@@ -73,7 +74,7 @@ def m(z, x, beta):
     Eq. (A2) from Ref[1]
     """
     return -nu(x,beta)/3 + ( zeta(z,x,beta)/3 + nu(x,beta)**2/36 ) *Omega(z,x,beta)**(-1/3) + Omega(z,x,beta)**(1/3)
-
+    
 def alphaOld(z, x, beta):
     """
     Eq. (A4) from Ref[1]
@@ -84,14 +85,37 @@ def alphaOld(z, x, beta):
         out= 1/2*( (2*m(z,x,beta))**(1/2) + ( -2*(m(z,x,beta) + nu(x,beta)) - 2*eta(z,x,beta)*(2*m(z,x,beta))**(-1/2) )**(1/2))
     return real(out)
 
+def alphaY(z, x, beta):
+    """
+    Eq. (A4) from Ref[1]
+    """
+    arg = 2*abs(m(z,x,beta))
+    out1 = real(1/2*(-arg**.5 + ( abs(-2*(m(z,x,beta) + nu(x,beta)) + 2*eta(z,x,beta)/arg**.5) )**.5))
+    out2 = real(1/2*( arg**.5 + ( abs(-2*(m(z,x,beta) + nu(x,beta)) - 2*eta(z,x,beta)/arg**.5) )**.5))
+    return np.where(z<0, out1, out2)
+
 def alpha(z, x, beta):
     """
     Eq. (A4) from Ref[1]
     """
-    out1 = 1/2*(-(2*m(z,x,beta))**(1/2) + ( -2*(m(z,x,beta) + nu(x,beta)) + 2*eta(z,x,beta)*(2*m(z,x,beta))**(-1/2) )**(1/2))
-    out2 = 1/2*( (2*m(z,x,beta))**(1/2) + ( -2*(m(z,x,beta) + nu(x,beta)) - 2*eta(z,x,beta)*(2*m(z,x,beta))**(-1/2) )**(1/2))
-    
-    return np.where(z<0, real(out1), real(out2))
+    arg = 2*abs(m(z,x,beta))
+    out1 = np.nan_to_num(real(1/2*(-arg**.5 + ( abs(-2*(m(z,x,beta) + nu(x,beta)) + 2*eta(z,x,beta)/arg**.5) )**.5)))
+    out2 = np.nan_to_num(real(1/2*( arg**.5 + ( abs(-2*(m(z,x,beta) + nu(x,beta)) - 2*eta(z,x,beta)/arg**.5) )**.5)))
+    return np.where(z<0, out1, out2)
+
+
+
+def alpha2(z, x, beta):
+    """
+    Eq. (A4) from Ref[1]
+    """
+    try:
+        arg = 2*abs(m(z,x,beta))
+        out1 = 1/2*(-np.sqrt(arg) + np.sqrt( abs(-2*(m(z,x,beta) + nu(x,beta)) + 2*eta(z,x,beta)/np.sqrt(arg)) ))
+        out2 = 1/2*( np.sqrt(arg) + np.sqrt( abs(-2*(m(z,x,beta) + nu(x,beta)) - 2*eta(z,x,beta)/np.sqrt(arg)) ))
+        return np.where(z<0, real(out1), real(out2))
+    except ZeroDivisionError:
+        return 0
 
 def kappa(z,x,beta):
     """
