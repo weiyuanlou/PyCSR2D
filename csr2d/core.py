@@ -1,11 +1,12 @@
 import mpmath as mp
 import numpy as np
-import scipy.signal as ss
+import scipy.special as ss
+import scipy.signal as ss2
 import math
 
 from numpy import abs, sin, cos, real, exp, pi
 from mpmath import ellipf, ellipe
-from .dist import lambda_p_Gauss
+from csr2d.dist import lambda_p_Gauss
 
 
 def lambda_p_Gauss(z, x): 
@@ -27,7 +28,7 @@ def psi_s(z, x, beta):
     except ZeroDivisionError:
         out = 0
         #print(f"Oops!  ZeroDivisionError at (z,x)= ({z:5.2f},{x:5.2f}). Returning 0.")
-    return out
+    return np.nan_to_num(out)
 
 @np.vectorize
 def my_ellipf(phi,m):
@@ -39,6 +40,18 @@ def my_ellipf(phi,m):
 def my_ellipe(phi,m):
     y = mp.ellipe(phi,m)
     y = np.float(y)
+    return y
+
+@np.vectorize
+def ss_ellipf(phi,m):
+    y = ss.ellipkinc(phi,m)
+    #y = np.float(y)
+    return y
+
+@np.vectorize
+def ss_ellipe(phi,m):
+    y = ss.ellipeinc(phi,m)
+    #y = np.float(y)
     return y
 
 def psi_x(z, x, beta):
@@ -58,7 +71,28 @@ def psi_x(z, x, beta):
     except ZeroDivisionError:
         out = 0
         #print(f"Oops!  ZeroDivisionError at (z,x)= ({z:5.2f},{x:5.2f}). Returning 0.")
-    return out
+    return np.nan_to_num(out)
+
+def psi_x_ss(z, x, beta):
+    """
+    Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
+    """
+    #z = np.float(z)
+    #x = np.float(x)
+    try:     
+        T1 = 1/abs(x)/(1+x)*((2+2*x+x**2) *ss_ellipf(alpha(z,x,beta),-4*(1+x)/x**2)  -  x**2*ss_ellipe(alpha(z,x,beta),-4*(1+x)/x**2))
+        D = kappa(z,x,beta)**2 - beta**2*(1+x)**2 *sin(2*alpha(z,x,beta))**2
+        T2 = (kappa(z,x,beta)**2 - 2*beta**2*(1+x)**2 + beta**2*(1+x)*(2+2*x+x**2)*cos(2*alpha(z,x,beta)))/beta/(1+x)/D
+        T3 = -kappa(z,x,beta) *sin(2*alpha(z,x,beta))/D
+        T4 = kappa(z,x,beta) *beta**2 *(1+x) *sin(2*alpha(z,x,beta)) *cos(2*alpha(z,x,beta))/D
+        T5 = 1/abs(x)*ss_ellipf(alpha(z,x,beta),-4*(1+x)/x**2)   # psi_phi without e/rho**2 factor
+        out = real( (T1 + T2 + T3 + T4) - 2/beta**2*T5 )
+    except ZeroDivisionError:
+        out = 0
+        #print(f"Oops!  ZeroDivisionError at (z,x)= ({z:5.2f},{x:5.2f}). Returning 0.")
+    return np.nan_to_num(out)
+
+
 
 def nu(x, beta):   
     """
@@ -110,12 +144,15 @@ def alpha(z, x, beta):
     """
     Eq. (A4) from Ref[1]
     """
-    arg = 2*abs(m(z,x,beta))
-    out1 = real(1/2*(-arg**.5 + ( abs(-2*(m(z,x,beta) + nu(x,beta)) + 2*eta(z,x,beta)/arg**.5) )**.5))
-    out2 = real(1/2*( arg**.5 + ( abs(-2*(m(z,x,beta) + nu(x,beta)) - 2*eta(z,x,beta)/arg**.5) )**.5))
-    return np.nan_to_num(np.where(z<0, out1, out2))
-
-
+    arg1 = np.sqrt(2*abs(m(z,x,beta)))
+    arg2 = -2*(m(z,x,beta) + nu(x,beta))
+    arg3 = 2*eta(z,x,beta)/arg1
+    #out1 = real(1/2*(-arg1 + np.sqrt( abs( arg2 + arg3) )))
+    #out2 = real(1/2*( arg1 + np.sqrt( abs( arg2 - arg3) )))
+    #return np.nan_to_num(np.where(z<0, out1, out2))
+    return np.nan_to_num(np.where(z<0, 
+                                  real(1/2*(-arg1 + np.sqrt( abs( arg2 + arg3) ))),
+                                  real(1/2*( arg1 + np.sqrt( abs( arg2 - arg3) )))))
 
 def alpha2(z, x, beta):
     """
@@ -164,7 +201,7 @@ def WsOld(gamma,rho,sigmaz,sigmax,dz,dx):
     psi_s_list = [[psi_s(i/2/rho,j,beta) for j in xvec2] for i in zvec2] 
     psi_s_grid = np.array(psi_s_list,dtype=float)
     
-    conv_s = ss.convolve2d(lambdap_grid, psi_s_grid, mode='same', boundary='fill', fillvalue=0)
+    conv_s = ss2.convolve2d(lambdap_grid, psi_s_grid, mode='same', boundary='fill', fillvalue=0)
     WsConv = beta**2/rho*conv_s*(dz)*(dx)
     return zvec, xvec, WsConv
 
@@ -187,6 +224,6 @@ def Wx(gamma,rho,sigmaz,sigmax,dz,dx):
     psi_x_list = [[psi_x(i/2/rho,j,beta) for j in xvec2] for i in zvec2]   
     psi_x_grid = np.array(psi_x_list,dtype=float)
     
-    conv_x = ss.convolve2d(lambdap_grid, psi_x_grid, mode='same', boundary='fill', fillvalue=0)
+    conv_x = ss2.convolve2d(lambdap_grid, psi_x_grid, mode='same', boundary='fill', fillvalue=0)
     WxConv = beta**2/rho*conv_x*(dz)*(dx)
     return zvec, xvec, WxConv
