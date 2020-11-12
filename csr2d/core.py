@@ -54,7 +54,7 @@ def ss_ellipe(phi,m):
     #y = np.float(y)
     return y
 
-def psi_x(z, x, beta):
+def psi_x_mp(z, x, beta):
     """
     Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
     """
@@ -73,19 +73,22 @@ def psi_x(z, x, beta):
         #print(f"Oops!  ZeroDivisionError at (z,x)= ({z:5.2f},{x:5.2f}). Returning 0.")
     return np.nan_to_num(out)
 
-def psi_x_ss(z, x, beta):
+def psi_x(z, x, beta):
     """
     Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
     """
     #z = np.float(z)
     #x = np.float(x)
+    kap = kappa(z,x,beta)
+    alp = alpha(z,x,beta)
+    arg2 = -4*(1+x)/x**2
     try:     
-        T1 = 1/abs(x)/(1+x)*((2+2*x+x**2) *ss_ellipf(alpha(z,x,beta),-4*(1+x)/x**2)  -  x**2*ss_ellipe(alpha(z,x,beta),-4*(1+x)/x**2))
-        D = kappa(z,x,beta)**2 - beta**2*(1+x)**2 *sin(2*alpha(z,x,beta))**2
-        T2 = (kappa(z,x,beta)**2 - 2*beta**2*(1+x)**2 + beta**2*(1+x)*(2+2*x+x**2)*cos(2*alpha(z,x,beta)))/beta/(1+x)/D
-        T3 = -kappa(z,x,beta) *sin(2*alpha(z,x,beta))/D
-        T4 = kappa(z,x,beta) *beta**2 *(1+x) *sin(2*alpha(z,x,beta)) *cos(2*alpha(z,x,beta))/D
-        T5 = 1/abs(x)*ss_ellipf(alpha(z,x,beta),-4*(1+x)/x**2)   # psi_phi without e/rho**2 factor
+        T1 = 1/abs(x)/(1+x)*((2+2*x+x**2) *ss.ellipkinc(alp, arg2) - x**2*ss.ellipeinc(alp, arg2))
+        D = kap**2 - beta**2*(1+x)**2 *sin(2*alp)**2
+        T2 = (kap**2 - 2*beta**2*(1+x)**2 + beta**2*(1+x)*(2+2*x+x**2)*cos(2*alp))/beta/(1+x)/D
+        T3 = -kap *sin(2*alp)/D
+        T4 = kap *beta**2 *(1+x) *sin(2*alp) *cos(2*alp)/D
+        T5 = 1/abs(x)*ss.ellipkinc(alp, arg2)   # psi_phi without e/rho**2 factor
         out = real( (T1 + T2 + T3 + T4) - 2/beta**2*T5 )
     except ZeroDivisionError:
         out = 0
