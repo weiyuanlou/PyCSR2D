@@ -18,7 +18,7 @@ def track_a_bend(b, P0c, L=0, theta = 0, g_err=0):
     
     Input:
         b: initial 6D bmad beam coord
-        P0c: reference momentum in MeV/c
+        P0c: reference momentum in eV/c
         L: length to track in m
         theta: bending angle 
         g_err: error in g = theta/L
@@ -60,9 +60,9 @@ def track_a_bend(b, P0c, L=0, theta = 0, g_err=0):
     Lc = np.sqrt(Lcu**2 + Lcv**2)
     Lp = Lc / sinc(theta_p / 2)
     
-    P = P0c*(1 + pz) # in MeV/c
-    E = np.sqrt(P**2 + 0.510998950**2) # in MeV 
-    E0 = np.sqrt(P0c**2 + 0.510998950**2) # in MeV 
+    P = P0c*(1 + pz) # in eV
+    E = np.sqrt(P**2 + 510998.950**2) # in eV 
+    E0 = np.sqrt(P0c**2 + 510998.950**2) # in eV 
     beta = P/E
     beta0 = P0c/E0
     
@@ -76,7 +76,7 @@ def track_a_bend(b, P0c, L=0, theta = 0, g_err=0):
     return np.array([xf, pxf, yf, pyf, zf, pzf])
     
     
-def track_entrance(d, P0c, L=0, theta = 0, g_err=0, e1=0, f_int = 0, h_gap = 0):
+def track_entrance(d, L=0, theta = 0, g_err=0, e1=0, f_int = 0, h_gap = 0):
     """
     Tracks a 6-D beam through the entrance fringe of a bending magnet.
     See chapter 16.2 of the Bmad manual.
@@ -84,7 +84,6 @@ def track_entrance(d, P0c, L=0, theta = 0, g_err=0, e1=0, f_int = 0, h_gap = 0):
     
     Input:
         b: initial 6D bmad beam coord
-        P0c: reference momentum
         L: length to track in m
         theta: bending angle in rad
         g_err: error in g = theta/L
@@ -136,7 +135,7 @@ def track_entrance(d, P0c, L=0, theta = 0, g_err=0, e1=0, f_int = 0, h_gap = 0):
     return np.array([xf, pxf, yf, pyf, zf, pzf])
    
 
-def track_exit(b, P0c, L=0, theta=0, g_err=0, e2=0, f_int=0, h_gap=0):
+def track_exit(b, L=0, theta=0, g_err=0, e2=0, f_int=0, h_gap=0):
     """
     Tracks a 6-D beam through the exit fringe of a bending magnet.
     See chapter 16.2 of the Bmad manual.
@@ -144,7 +143,6 @@ def track_exit(b, P0c, L=0, theta=0, g_err=0, e2=0, f_int=0, h_gap=0):
     
     Input:
         b: initial 6D bmad beam coord
-        P0c: reference momentum in MeV/c
         L: length to track in m
         theta: bending angle 
         g_err: error in g = theta/L
@@ -205,6 +203,7 @@ def track_a_drift(b, P0c, L=0):
     
     Input:
         b: initial 6D bmad beam coord
+        P0c: reference momentum in eV/c
         L: length to track in m
 
     Ouptut:
@@ -219,9 +218,9 @@ def track_a_drift(b, P0c, L=0):
     
     pl = np.sqrt(1-(px**2 + py**2)/(1 + pz**2)) # unitless
     
-    P = P0c*(1 + pz) # in MeV/c
-    E = np.sqrt(P**2 + 0.510998950**2) # in MeV 
-    E0 = np.sqrt(P0c**2 + 0.510998950**2) # in MeV 
+    P = P0c*(1 + pz) # in eV
+    E = np.sqrt(P**2 + 510998.950**2) # in eV 
+    E0 = np.sqrt(P0c**2 + 510998.950**2) # in eV 
     beta = P/E
     beta0 = P0c/E0
     

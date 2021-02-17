@@ -6,7 +6,7 @@ from scipy.signal import convolve2d, fftconvolve, oaconvolve
 from cupyx.scipy.ndimage import convolve as cupy_conv
 
 
-from csr2d.deposit import split_particles, deposit_particles
+from csr2d.deposit import split_particles, deposit_particles, histogram_cic_2d
 from csr2d.central_difference import central_difference_z
 from csr2d.core import psi_s, psi_x
 #from csr2d.beam_conversion import particle_group_to_bmad, bmad_to_particle_group
@@ -18,31 +18,34 @@ import concurrent.futures as cf
 from scipy.signal import savgol_filter
 from scipy.interpolate import RectBivariateSpline
 
-def calc_csr_kick(beam, charges, Np, gamma, rho, Nz=100, Nx=100, verbose=True):
+def calc_csr_kick(beam, charges, Np, gamma, rho, Nz=100, sigma_z=1E-3, Nx=100, sigma_x=1E-3, reuse_psi_grids=False, psi_s_grid_old=None, psi_x_grid_old=None, verbose=True):
     """
-    
     """
     (x_b, xp_b, y_b, yp_b, z_b, zp_b) = beam
     zx_positions = np.stack((z_b, x_b)).T
     
     # Fix the grid here
-    # The grid needs to enclose all particles in z-x space  
-    mins = np.array([-51E-6,-51E-6])  # Lower bounds of the grid
-    maxs = np.array([51E-6,51E-6])     # Upper bounds of the grid
+    # The grid needs to enclose most particles in z-x space  
+    mins = np.array([-6*sigma_z,-6*sigma_x])  # Lower bounds of the grid
+    maxs = np.array([ 6*sigma_z, 6*sigma_x])     # Upper bounds of the grid
     sizes = np.array([Nz, Nx])
 
     (zmin,xmin) = mins
     (zmax,xmax) = maxs
-    #(Nz,Nx) = sizes
+    (Nz,Nx) = sizes
     (dz,dx) = (maxs - mins)/(sizes-1)  # grid steps
     
     
-    indexes, contrib = split_particles(zx_positions, charges, mins, maxs, sizes)
+    #indexes, contrib = split_particles(zx_positions, charges, mins, maxs, sizes)
+    #t1 = time.time();
+    #charge_grid = deposit_particles(Np, sizes, indexes, contrib)
+    #t2 = time.time();
+    
     t1 = time.time();
-    charge_grid = deposit_particles(Np, sizes, indexes, contrib)
+    charge_grid = histogram_cic_2d( z_b, x_b, charges, Nz, zmin, zmax, Nx, xmin, xmax )
     t2 = time.time();
     
-
+    
         
     # Normalize the grid so its integral is unity
     norm = np.sum(charge_grid)*dz*dx
@@ -62,19 +65,24 @@ def calc_csr_kick(beam, charges, Np, gamma, rho, Nz=100, Nx=100, verbose=True):
     
     
     t3 = time.time()
-
-    # Creating the grid of the potential 
-    zvec2 = np.linspace(2*zmin,2*zmax,2*Nz)
-    xvec2 = np.linspace(2*xmin,2*xmax,2*Nx)
-    zm2, xm2 = np.meshgrid(zvec2, xvec2, indexing='ij')
-    #psi_s_grid = psi_s(zm2,xm2,beta)
     
-    beta_grid = beta*np.ones(zm2.shape)
-    with cf.ProcessPoolExecutor(max_workers = 12) as executor:
-        temp = executor.map(psi_s, zm2, xm2, beta_grid)
-        psi_s_grid = np.array(list(temp))
-        temp2 = executor.map(psi_x, zm2, xm2, beta_grid)
-        psi_x_grid = np.array(list(temp2))
+    if (reuse_psi_grids == True):
+        psi_s_grid = psi_s_grid_old
+        psi_x_grid = psi_x_grid_old
+        
+    else:
+        # Creating the potential grids 
+        zvec2 = np.linspace(2*zmin,2*zmax,2*Nz)
+        xvec2 = np.linspace(2*xmin,2*xmax,2*Nx)
+        zm2, xm2 = np.meshgrid(zvec2, xvec2, indexing='ij')
+        #psi_s_grid = psi_s(zm2,xm2,beta)
+    
+        beta_grid = beta*np.ones(zm2.shape)
+        with cf.ProcessPoolExecutor(max_workers = 12) as executor:
+            temp = executor.map(psi_s, zm2/2/rho, xm2, beta_grid)
+            psi_s_grid = np.array(list(temp))
+            temp2 = executor.map(psi_x, zm2/2/rho, xm2, beta_grid)
+            psi_x_grid = np.array(list(temp2))
     
     t4 = time.time();
 
@@ -94,13 +102,17 @@ def calc_csr_kick(beam, charges, Np, gamma, rho, Nz=100, Nx=100, verbose=True):
     Ws_interp = RectBivariateSpline(zvec, xvec, Ws_grid)
     Wx_interp = RectBivariateSpline(zvec, xvec, Wx_grid)
 
-    
+
     r_e = 2.8179403227E-15 
-    Nb = np.sum(contrib)/1.602176634E-19
+    q_e = 1.602176634E-19
+    Nb =  np.sum(charge_grid)/q_e
     kick_factor = r_e*Nb/gamma
     
     # Calculate the kicks at the paritcle locations
     delta_kick = kick_factor * Ws_interp.ev(z_b, x_b)
     xp_kick    = kick_factor * Wx_interp.ev(z_b, x_b)
     
-    return delta_kick, xp_kick
+    
+    return {'zvec':zvec, 'xvec':xvec, 'delta_kick':delta_kick, 'xp_kick':xp_kick, 'Ws_grid':Ws_grid, 'Wx_grid':Wx_grid, 'psi_s_grid':psi_s_grid, 'psi_x_grid':psi_x_grid}
+    
+    #return delta_kick, xp_kick
