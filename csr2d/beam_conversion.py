@@ -36,45 +36,20 @@ def particle_group_to_bmad(particle_group,
         bmad pz = p/p0 - 1
     and longitudinal coordinate
         bmad z = -beta*c(t - t_ref)
-    
-    If p0c is given, this style of coordinates is written.
-    
-    Otherwise, Bmad's time based coordinates are written. 
-
-    
     """
 
     n = particle_group.n_particle            
     x = particle_group.x
     y = particle_group.y
 
-    px = particle_group.px
-    py = particle_group.py
+    px = particle_group.px/p0c
+    py = particle_group.py/p0c
 
-    t = particle_group.t
+    z = -particle_group.beta*299792458*(particle_group.t - t_ref)
+    pz = particle_group.p/p0c -1.0
     
     status  = particle_group.status 
     weight  = particle_group.weight
-    
-    zeros = np.full(n, 0)
-    
-    if p0c:
-        # s-based coordinates
-        
-        # Check that z are all the same
-        unique_z = np.unique(particle_group.z)
-        assert len(unique_z) == 1, 'All particles must be a the same z position'        
-        
-        px = px/p0c
-        py = py/p0c
-        
-        z = -particle_group.beta*299792458*(t - t_ref)
-        pz = particle_group.p/p0c -1.0
-        
-    else:
-        # Time coordinates.
-        z = t
-        pz = particle_group.pz  
         
     beam = np.vstack([x,px,y,py,z,pz])
     return beam, weight

@@ -113,6 +113,6 @@ def calc_csr_kick(beam, charges, Np, gamma, rho, Nz=100, sigma_z=1E-3, Nx=100, s
     xp_kick    = kick_factor * Wx_interp.ev(z_b, x_b)
     
     
-    return {'zvec':zvec, 'xvec':xvec, 'delta_kick':delta_kick, 'xp_kick':xp_kick, 'Ws_grid':Ws_grid, 'Wx_grid':Wx_grid, 'psi_s_grid':psi_s_grid, 'psi_x_grid':psi_x_grid}
+    return {'zvec':zvec, 'xvec':xvec, 'delta_kick':delta_kick, 'xp_kick':xp_kick, 'Ws_grid':Ws_grid, 'Wx_grid':Wx_grid, 'psi_s_grid':psi_s_grid, 'psi_x_grid':psi_x_grid, 'charge_grid':charge_grid}
     
     #return delta_kick, xp_kick

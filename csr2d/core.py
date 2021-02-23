@@ -1,21 +1,10 @@
-import mpmath as mp
 import numpy as np
 import scipy.special as ss
 import scipy.signal as ss2
 import math
 
 from numpy import abs, sin, cos, real, exp, pi
-from mpmath import ellipf, ellipe
-from csr2d.dist import lambda_p_Gauss
 
-
-def lambda_p_Gauss(z, x): 
-    """
-    The z derivative of a 2D Gaussian G(z,x)
-    """
-    sigmaz = 10E-6 
-    sigmax = 10E-6
-    return 1/(2*pi*sigmaz*sigmax)*exp(-x**2/2/sigmax**2)*exp(-z**2/2/sigmaz**2)*(-z/sigmaz**2)
 
 def psi_s(z, x, beta):
     """
@@ -31,18 +20,6 @@ def psi_s(z, x, beta):
     return np.nan_to_num(out)
 
 @np.vectorize
-def my_ellipf(phi,m):
-    y = mp.ellipf(phi,m)
-    y = np.float(y)
-    return y
-
-@np.vectorize
-def my_ellipe(phi,m):
-    y = mp.ellipe(phi,m)
-    y = np.float(y)
-    return y
-
-@np.vectorize
 def ss_ellipf(phi,m):
     y = ss.ellipkinc(phi,m)
     #y = np.float(y)
@@ -54,24 +31,6 @@ def ss_ellipe(phi,m):
     #y = np.float(y)
     return y
 
-def psi_x_mp(z, x, beta):
-    """
-    Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
-    """
-    #z = np.float(z)
-    #x = np.float(x)
-    try:     
-        T1 = 1/abs(x)/(1+x)*((2+2*x+x**2) *my_ellipf(alpha(z,x,beta),-4*(1+x)/x**2)  -  x**2*my_ellipe(alpha(z,x,beta),-4*(1+x)/x**2))
-        D = kappa(z,x,beta)**2 - beta**2*(1+x)**2 *sin(2*alpha(z,x,beta))**2
-        T2 = (kappa(z,x,beta)**2 - 2*beta**2*(1+x)**2 + beta**2*(1+x)*(2+2*x+x**2)*cos(2*alpha(z,x,beta)))/beta/(1+x)/D
-        T3 = -kappa(z,x,beta) *sin(2*alpha(z,x,beta))/D
-        T4 = kappa(z,x,beta) *beta**2 *(1+x) *sin(2*alpha(z,x,beta)) *cos(2*alpha(z,x,beta))/D
-        T5 = 1/abs(x)*my_ellipf(alpha(z,x,beta),-4*(1+x)/x**2)   # psi_phi without e/rho**2 factor
-        out = real( (T1 + T2 + T3 + T4) - 2/beta**2*T5 )
-    except ZeroDivisionError:
-        out = 0
-        #print(f"Oops!  ZeroDivisionError at (z,x)= ({z:5.2f},{x:5.2f}). Returning 0.")
-    return np.nan_to_num(out)
 
 def psi_x(z, x, beta):
     """
@@ -94,7 +53,6 @@ def psi_x(z, x, beta):
         out = 0
         #print(f"Oops!  ZeroDivisionError at (z,x)= ({z:5.2f},{x:5.2f}). Returning 0.")
     return np.nan_to_num(out)
-
 
 
 def nu(x, beta):   
@@ -176,6 +134,17 @@ def kappa(z,x,beta):
     return ( x**2 + 4*(1+x) *sin(alpha(z,x,beta))**2 )**(1/2)
 
 
+### Functions below are obsolete
+
+
+def lambda_p_Gauss(z, x): 
+    """
+    The z derivative of a 2D Gaussian G(z,x)
+    """
+    sigmaz = 10E-6 
+    sigmax = 10E-6
+    return 1/(2*pi*sigmaz*sigmax)*exp(-x**2/2/sigmax**2)*exp(-z**2/2/sigmaz**2)*(-z/sigmaz**2)
+
 def make_2dgrid(func,zmin,zmax,dz, xmin, xmax, dx):
     """
     Make a 2D grid of a function
@@ -208,7 +177,7 @@ def WsOld(gamma,rho,sigmaz,sigmax,dz,dx):
     WsConv = beta**2/rho*conv_s*(dz)*(dx)
     return zvec, xvec, WsConv
 
-def Wx(gamma,rho,sigmaz,sigmax,dz,dx):
+def WxOld(gamma,rho,sigmaz,sigmax,dz,dx):
     """
     Apply 2D convolution to compute the transverse wake Wx on a grid 
     Also returns the zvec and xvec which define the grid
