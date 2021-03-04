@@ -1,0 +1,35 @@
+!+
+! Translated from MAD8 file: chicaneLattice.xsif
+!-
+
+
+! Beam lines generated from Lucretia: (04-Feb-2021 10:33:10)
+
+
+parameter[E_tot] = 30 * 1e9
+parameter[n_part] = 1.248302e+10
+!EMITZ=0+1925i,BETAZ=0-8.31168831e-13i,ALPHAZ=0+0.0333333333i
+
+chicanelattice: LINE=(BEGChicane,
+    BChicane1, D1,
+    BChicane2, D2,
+    BChicane3, D3,
+    BChicane4, ENDChicane)
+    
+! Bend Definitions:
+
+bchicane1: sbend, l = 20, angle = 0.013, fint = 0.5, hgap = 0.02542, e1 = 0, e2 = 0.013
+bchicane2: sbend, l = 20, angle = -0.013, fint = 0.5, hgap = 0.02542, e1 = -0.013, e2 = 0
+bchicane3: sbend, l = 20, angle = -0.013, fint = 0.5, hgap = 0.02542, e1 = 0, e2 = -0.013
+bchicane4: sbend, l = 20, angle = 0.013, fint = 0.5, hgap = 0.02542, e1 = 0.013, e2 = 0
+
+! Drift Definitions:
+
+d1: drift, l = 32.5
+d2: drift, l = 32.5
+d3: drift, l = 32.5
+
+! Marker Definitions:
+
+begchicane: marker
+endchicane: marker

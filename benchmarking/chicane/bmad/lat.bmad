@@ -1,0 +1,13 @@
+call, file = chicaneLattice.bmad
+
+
+beginning[beta_a] = 2111.45385
+beginning[beta_b] = 2111.45385
+
+beginning[alpha_a] = 11.786553
+beginning[alpha_b] = 11.786553
+
+parameter[geometry] = open
+parameter[particle] = electron
+
+
