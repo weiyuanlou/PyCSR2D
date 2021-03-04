@@ -1,0 +1,34 @@
+
+set global plot_on = F
+
+
+
+set bmad_com csr_and_space_charge_on = T
+
+
+! CSR
+set csr_param n_bin = 500
+set csr_param ds_track_step = 0.02
+set ele * csr_method = 1_dim
+!set ele * csr_method = off
+
+! No spacecharge
+set ele * space_charge_method = off
+
+! 1D spacecharge
+!set ele * space_charge_method = slice
+
+! 3D spacecharge
+!set bmad_com space_charge_mesh_size   = 64 64 64
+!set ele * space_charge_method = fft_3d
+
+
+
+!set global track_type=beam
+!quit
+set global plot_on = T
+
+
+
+
+

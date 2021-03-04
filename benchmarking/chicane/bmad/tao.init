@@ -1,0 +1,46 @@
+&tao_start
+  n_universes = 1
+  plot_file    = 'tao_plot.init'
+  startup_file = 'tao.startup'
+/
+
+
+
+
+!--------------------------------------------------------
+&tao_design_lattice
+  !unique_name_suffix="*::_##?"
+  design_lattice(1)%file= 'lat.bmad'
+!  combine_consecutive_elements_of_like_name = T
+/
+
+!------------------------------------------------------------------------
+&tao_params
+  !global%plot_on = T
+  global%track_type = 'single'
+  global%beam_timer_on = T
+  global%random_engine = 'pseudo' ! or: 'quasi'
+  global%de_lm_step_ratio = 1500
+  global%optimizer = 'lmdif'
+  global%n_opti_cycles = 100
+  global%var_out_file = ''
+  !---Bmad---
+  bmad_com%radiation_damping_on = F
+  bmad_com%radiation_fluctuations_on = T
+/
+
+
+&tao_beam_init
+beam_init%random_engine = 'quasi'
+ix_universe = 1
+beam_saved_at =  "MARKER::*"
+beam_dump_at = 'marker::m_*'
+beam_dump_file = 'beam_dump.h5'
+!track_start = 'OTR2'
+!track_end = 'DBMARK82'
+beam_init%position_file = 'Beam_in.h5'
+
+/
+
+
+
