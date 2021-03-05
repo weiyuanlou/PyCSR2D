@@ -1,0 +1,58 @@
+
+! Edit "search_path =" in run_setup to point to the locations of your
+! wakefield definition files and input particle distribution files
+
+&run_setup
+ lattice = simple_bend.lte,
+ rootname = test,
+ use_beamline = myline,
+! output = %s.out,
+ !centroid = %s.cen,
+ !sigma = %s.sig,
+ !final = %s.fin,
+ !parameters = %s.par,
+ !magnets = %s.mag,
+ combine_bunch_statistics = 0,
+ default_order = 2,
+ concat_order = 0,
+ print_statistics = 0,
+ random_number_seed = 9876543210,
+ p_central_mev = 5009.833679739263, !! gamma = 9804
+ tracking_updates = 1,
+ search_path = "/global/u2/w/wlou1991/cfs/GitHub/LCLS-II-TN-20-03/elegant/rmat/,/global/u2/w/wlou1991/cfs/GitHub/LCLS-II-TN-20-03/elegant/wakes/,/global/u2/w/wlou1991/cfs/GitHub/LCLS-II-TN-20-03/elegant/beams/,/global/u2/w/wlou1991/cfs/GitHub/LCLS-II-TN-20-03/bmad/beams/"
+&end
+
+&run_control
+ n_steps = 1,
+ n_indices = 0,
+ reset_rf_for_each_step = 1
+&end
+
+&floor_coordinates !initial coordinates at BEAM0
+ filename = %s.flr,
+ X0 = 0.28,
+ Y0 = -0.99,
+ Z0 = 3.91419
+&end
+
+&twiss_output !initial Twiss at BEAM0
+ filename = %s.twi,
+ matched = 0,
+ beta_x = 9.3480,
+ alpha_x = -1.6946,
+ beta_y = 9.3429,
+ alpha_y = -1.6925,
+ concat_order = 3
+&end
+
+&sdds_beam !initial beam at BEAM0
+ input = Glen_beam_Np1M.sdds,
+ input_type = "elegant",
+ sample_interval = 1,
+ p_lower = 0,
+ p_upper = 1e10,
+ reuse_bunch = 0,
+ reverse_t_sign = 0
+&end
+
+&track &end
