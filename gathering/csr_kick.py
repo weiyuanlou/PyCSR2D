@@ -18,7 +18,7 @@ import concurrent.futures as cf
 from scipy.signal import savgol_filter
 from scipy.interpolate import RectBivariateSpline
 
-def calc_csr_kick(beam, charges, Np, gamma, rho, Nz=100, sigma_z=1E-3, Nx=100, sigma_x=1E-3, reuse_psi_grids=False, psi_s_grid_old=None, psi_x_grid_old=None, verbose=True):
+def calc_csr_kick(beam, charges, Np=None, gamma=None, rho=None, Nz=100, sigma_z=1E-3, Nx=100, sigma_x=1E-3, reuse_psi_grids=False, psi_s_grid_old=None, psi_x_grid_old=None, verbose=True):
     """
     """
     (x_b, xp_b, y_b, yp_b, z_b, zp_b) = beam
@@ -41,11 +41,10 @@ def calc_csr_kick(beam, charges, Np, gamma, rho, Nz=100, sigma_z=1E-3, Nx=100, s
     #charge_grid = deposit_particles(Np, sizes, indexes, contrib)
     #t2 = time.time();
     
+    # Remi's fast code 
     t1 = time.time();
     charge_grid = histogram_cic_2d( z_b, x_b, charges, Nz, zmin, zmax, Nx, xmin, xmax )
     t2 = time.time();
-    
-    
         
     # Normalize the grid so its integral is unity
     norm = np.sum(charge_grid)*dz*dx
@@ -115,4 +114,3 @@ def calc_csr_kick(beam, charges, Np, gamma, rho, Nz=100, sigma_z=1E-3, Nx=100, s
     
     return {'zvec':zvec, 'xvec':xvec, 'delta_kick':delta_kick, 'xp_kick':xp_kick, 'Ws_grid':Ws_grid, 'Wx_grid':Wx_grid, 'psi_s_grid':psi_s_grid, 'psi_x_grid':psi_x_grid, 'charge_grid':charge_grid}
     
-    #return delta_kick, xp_kick

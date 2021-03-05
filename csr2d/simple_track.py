@@ -14,7 +14,6 @@ def track_a_bend(b, P0c, L=0, theta = 0, g_err=0):
     """
     Tracks a 6-D beam through a bending magnet.
     See chapter 23.6 of the Bmad manual.
-    The beam will be overwritten.
     
     Input:
         b: initial 6D bmad beam coord
@@ -80,7 +79,6 @@ def track_entrance(d, L=0, theta = 0, g_err=0, e1=0, f_int = 0, h_gap = 0):
     """
     Tracks a 6-D beam through the entrance fringe of a bending magnet.
     See chapter 16.2 of the Bmad manual.
-    The beam will be overwritten.
     
     Input:
         b: initial 6D bmad beam coord
@@ -139,7 +137,6 @@ def track_exit(b, L=0, theta=0, g_err=0, e2=0, f_int=0, h_gap=0):
     """
     Tracks a 6-D beam through the exit fringe of a bending magnet.
     See chapter 16.2 of the Bmad manual.
-    The beam will be overwritten.
     
     Input:
         b: initial 6D bmad beam coord
