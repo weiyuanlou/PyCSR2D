@@ -8,10 +8,16 @@ from scipy.signal import savgol_filter
 from scipy.interpolate import RectBivariateSpline
 from scipy.signal import convolve2d, fftconvolve, oaconvolve
 
+import scipy.constants
+mec2 = scipy.constants.value('electron mass energy equivalent in MeV')*1e6
+c_light = scipy.constants.c
+e_charge = scipy.constants.e
+r_e = scipy.constants.value('classical electron radius')
+
 import time
 
 
-def csr2d_kick_calc(z_b, x_b, charges,
+def csr2d_kick_calc(z_b, x_b, weight=None,
                     gamma=None,
                     rho=None,
                     nz=100,
@@ -22,7 +28,8 @@ def csr2d_kick_calc(z_b, x_b, charges,
                     psi_s_grid_old=None,
                     psi_x_grid_old=None,
                     map_f=map,
-                    verbose=True):
+                    species='electron',
+                    debug=False):
     """
     
     Calculates the 2D CSR kick on a set of particles with positions `z_b`, `x_b` and charges `charges`.
@@ -31,13 +38,14 @@ def csr2d_kick_calc(z_b, x_b, charges,
     Parameters
     ----------
     z_b : np.array
-        z coordinates in [m]
+        Bunch z coordinates in [m]
 
     x_b : np.array
-        x coordinates in [m]
+        Bunch x coordinates in [m]
   
-    charges : np.array
-        charges (weights) in [C]
+    weight : np.array
+        weight array (positive only) in [C]
+        This should sum to the total charge in the bunch
         
     nz : int
         number of z grid points
@@ -56,20 +64,30 @@ def csr2d_kick_calc(z_b, x_b, charges,
                 map (default)
                 executor.map
     
+    species : str
+        Particle species. Currently required to be 'electron'
     
-          
-    
+    debug: bool
+        If True, returns the computational grids. 
+        Default: False
+        
+              
     Returns
     -------
-    delta_kick : np.array
-        relative energy kick at each particle
-        
-    xp_kick : np.array
-        relative transverse momenta kick at each particle
+    dict with:
+    
+        ddelta_ds : np.array
+            relative z momentum kick per meter
+            
+        dxp_ds : np.array
+            relative x momentum kick per meter
         
     
         
     """
+    assert species == 'electron', 'TODO: support species {species}'
+    assert np.sign(rho) == 1, 'TODO: negative rho'
+    
     
     # Grid setup
     if zlim:
@@ -100,8 +118,11 @@ def csr2d_kick_calc(z_b, x_b, charges,
     
     # Remi's fast code 
     t1 = time.time();
-    charge_grid = histogram_cic_2d( z_b, x_b, charges, nz, zmin, zmax, nx, xmin, xmax )
-    t2 = time.time();
+    charge_grid = histogram_cic_2d( z_b, x_b, weight, nz, zmin, zmax, nx, xmin, xmax )
+    
+    if debug:
+        t2 = time.time();
+        print('Depositing particles takes:', t2 - t1, 's')    
         
     # Normalize the grid so its integral is unity
     norm = np.sum(charge_grid)*dz*dx
@@ -139,18 +160,16 @@ def csr2d_kick_calc(z_b, x_b, charges,
         temp2 = map_f(psi_x, zm2/2/rho, xm2, beta_grid)
         psi_x_grid = np.array(list(temp2))
     
-    t4 = time.time();
-
-    if verbose:
-        print('Depositing particles takes:', t2 - t1, 's')
+    if debug:
+        t4 = time.time();
         print('Computing potential grids take:', t4 - t3, 's')
-        
         
     # Compute the wake via 2d convolution
     conv_s = oaconvolve(lambda_grid_filtered_prime, psi_s_grid, mode='same')
     conv_x = oaconvolve(lambda_grid_filtered_prime, psi_x_grid, mode='same')
-    t5 = time.time()
-    if verbose:
+    
+    if debug:
+        t5 = time.time()
         print('Convolution takes:', t5 - t4, 's')    
     
     Ws_grid = (beta**2/rho)*(conv_s)*(dz*dx)
@@ -161,14 +180,16 @@ def csr2d_kick_calc(z_b, x_b, charges,
     Wx_interp = RectBivariateSpline(zvec, xvec, Wx_grid)
 
     # Overall factor
-    r_e = 2.8179403227E-15 # Classical electon radius in m
-    q_e = 1.602176634E-19
-    Nb =  np.sum(charge_grid)/q_e
-    kick_factor = r_e*Nb/gamma
+    Nb =  np.sum(weight)/e_charge
+    kick_factor = r_e*Nb/gamma # m
     
     # Calculate the kicks at the particle locations
     delta_kick = kick_factor * Ws_interp.ev(z_b, x_b)
     xp_kick    = kick_factor * Wx_interp.ev(z_b, x_b)
     
+    result = {'ddelta_ds':delta_kick, 'dxp_ds':xp_kick}
     
-    return {'zvec':zvec, 'xvec':xvec, 'delta_kick':delta_kick, 'xp_kick':xp_kick, 'Ws_grid':Ws_grid, 'Wx_grid':Wx_grid, 'psi_s_grid':psi_s_grid, 'psi_x_grid':psi_x_grid, 'charge_grid':charge_grid}
+    if debug:
+        result.update({'zvec':zvec, 'xvec':xvec, 'Ws_grid':Ws_grid, 'Wx_grid':Wx_grid, 'psi_s_grid':psi_s_grid, 'psi_x_grid':psi_x_grid, 'charge_grid':charge_grid})
+    
+    return result
