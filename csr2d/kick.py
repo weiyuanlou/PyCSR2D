@@ -17,7 +17,8 @@ r_e = scipy.constants.value('classical electron radius')
 import time
 
 
-def csr2d_kick_calc(z_b, x_b, weight=None,
+def csr2d_kick_calc(z_b, x_b, weight,
+                    *, 
                     gamma=None,
                     rho=None,
                     nz=100,
@@ -47,17 +48,23 @@ def csr2d_kick_calc(z_b, x_b, weight=None,
         weight array (positive only) in [C]
         This should sum to the total charge in the bunch
         
+    gamma : float
+        Relativistic gamma
+        
+    rho : float
+        bending radius in [m]
+        
     nz : int
         number of z grid points
         
     nx : int
         number of x grid points        
     
-    zlim : (min, max) or None
-        z grid limits
+    zlim : floats (min, max) or None
+        z grid limits in [m]
         
-    xlim : (min, max) or None  
-        x grid limits
+    xlim : floats (min, max) or None  
+        x grid limits in [m]
         
     map_f : map function for creating potential grids.
             Examples:
@@ -77,10 +84,10 @@ def csr2d_kick_calc(z_b, x_b, weight=None,
     dict with:
     
         ddelta_ds : np.array
-            relative z momentum kick per meter
+            relative z momentum kick [1/m]
             
         dxp_ds : np.array
-            relative x momentum kick per meter
+            relative x momentum kick [1/m]
         
     
         
