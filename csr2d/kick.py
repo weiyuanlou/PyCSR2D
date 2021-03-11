@@ -176,9 +176,9 @@ def csr2d_kick_calc(
         beta_grid = beta * np.ones(zm2.shape)
 
         # Map (possibly parallel)
-        temp = map_f(psi_s, zm2 / 2 / rho, xm2, beta_grid)
+        temp = map_f(psi_s, zm2 / 2 / rho, xm2 / rho, beta_grid)
         psi_s_grid = np.array(list(temp))
-        temp2 = map_f(psi_x, zm2 / 2 / rho, xm2, beta_grid)
+        temp2 = map_f(psi_x, zm2 / 2 / rho, xm2 / rho, beta_grid)
         psi_x_grid = np.array(list(temp2))
 
     if debug:
@@ -218,6 +218,8 @@ def csr2d_kick_calc(
             {
                 "zvec": zvec,
                 "xvec": xvec,
+                "zvec2": zvec2,
+                "xvec2": xvec2,
                 "Ws_grid": Ws_grid,
                 "Wx_grid": Wx_grid,
                 "psi_s_grid": psi_s_grid,
