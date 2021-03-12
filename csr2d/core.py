@@ -12,14 +12,22 @@ def psi_s(z, x, beta):
     Ref[1]: Y. Cai and Yuantao. Ding, PRAB 23, 014402 (2020).
     Note that 'x' here corresponds to 'chi = x / rho' in the paper.
     """
-    try:
-        out = (cos(2 * alpha(z, x, beta)) - 1 / (1+x)) / (
-            kappa(z, x, beta) - beta * (1+x) * sin(2 * alpha(z, x, beta)))
-    except ZeroDivisionError:
-        out = 0
+    #try:
+    out = (cos(2 * alpha(z, x, beta)) - 1 / (1+x)) / (
+            kappa(z, x, beta) - beta * (1+x) * sin(2*alpha(z, x, beta)))
+    #except ZeroDivisionError:
+        # out = 0
         # print(f"Oops!  ZeroDivisionError at (z,x)= ({z:5.2f},{x:5.2f}). Returning 0.")
     return np.nan_to_num(out)
 
+def psi_x_on_x_axis(z, dx, beta):
+    """
+    Evalute psi_x close to x = 0
+    This is a rough approximation of the singularity along x = 0
+    """
+    return (psi_x(z, -dx/2, beta) + psi_x(z, dx/2, beta))/2
+
+           
 
 @np.vectorize
 def ss_ellipf(phi, m):

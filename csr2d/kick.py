@@ -1,6 +1,6 @@
 from csr2d.deposit import split_particles, deposit_particles, histogram_cic_2d
 from csr2d.central_difference import central_difference_z
-from csr2d.core import psi_s, psi_x
+from csr2d.core import psi_s, psi_x, psi_x_on_x_axis
 
 import numpy as np
 
@@ -146,14 +146,10 @@ def csr2d_kick_calc(
     lambda_grid = charge_grid / norm
 
     # Apply savgol filter
-    lambda_grid_filtered = np.array(
-        [savgol_filter(lambda_grid[:, i], 13, 2) for i in np.arange(nx)]
-    ).T
+    lambda_grid_filtered = np.array([savgol_filter(lambda_grid[:, i], 13, 2) for i in np.arange(nx)]).T
 
     # Differentiation in z
-    lambda_grid_filtered_prime = central_difference_z(
-        lambda_grid_filtered, nz, nx, dz, order=1
-    )
+    lambda_grid_filtered_prime = central_difference_z(lambda_grid_filtered, nz, nx, dz, order=1)
 
     # Grid axis vectors
     zvec = np.linspace(zmin, zmax, nz)
@@ -169,8 +165,10 @@ def csr2d_kick_calc(
 
     else:
         # Creating the potential grids
-        zvec2 = np.linspace(2 * zmin, 2 * zmax, 2 * nz)
-        xvec2 = np.linspace(2 * xmin, 2 * xmax, 2 * nx)
+        #zvec2 = np.linspace(2 * zmin, 2 * zmax, 2 * nz)
+        #xvec2 = np.linspace(2 * xmin, 2 * xmax, 2 * nx)
+        zvec2 = np.arange(-nz,nz,1)*dz # center = 0 is at [nz]
+        xvec2 = np.arange(-nx,nx,1)*dx # center = 0 is at [nx]
         zm2, xm2 = np.meshgrid(zvec2, xvec2, indexing="ij")
 
         beta_grid = beta * np.ones(zm2.shape)
@@ -180,6 +178,9 @@ def csr2d_kick_calc(
         psi_s_grid = np.array(list(temp))
         temp2 = map_f(psi_x, zm2 / 2 / rho, xm2 / rho, beta_grid)
         psi_x_grid = np.array(list(temp2))
+        
+        # Replacing the fake zeros along the x_axis ( due to singularity) with averaged value from the nearby grid
+        psi_x_grid[:,nx] = psi_x_on_x_axis(zvec2, dx, beta)
 
     if debug:
         t4 = time.time()
