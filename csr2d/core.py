@@ -134,18 +134,8 @@ def alphaOld(z, x, beta):
     Note that 'x' here corresponds to 'chi = x / rho' in the paper.
     """
     if z < 0:
-        out = (
-            1
-            / 2
-            * (
-                -(2 * m(z, x, beta)) ** (1 / 2)
-                + (
-                    -2 * (m(z, x, beta) + nu(x, beta))
-                    + 2 * eta(z, x, beta) * (2 * m(z, x, beta)) ** (-1 / 2)
-                )
-                ** (1 / 2)
-            )
-        )
+        out = (1/2* (-(2*m(z, x, beta))**(1/2)+ (-2*(m(z, x, beta) + nu(x, beta))
+                    + 2*eta(z, x, beta)*(2*m(z, x, beta))**(-1/2))**(1/2)))
     else:
         out = (
             1
