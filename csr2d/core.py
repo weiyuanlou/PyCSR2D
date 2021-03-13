@@ -20,15 +20,28 @@ def psi_s(z, x, beta):
         # print(f"Oops!  ZeroDivisionError at (z,x)= ({z:5.2f},{x:5.2f}). Returning 0.")
     return np.nan_to_num(out)
 
-def psi_x_on_x_axis(z, dx, beta):
+def psi_x_where_x_equals_zero(z, dx, beta):
     """
-    Evalute psi_x close to x = 0
-    This is a rough approximation of the singularity along x = 0
+    Evaluate psi_x close to x = 0
+    This is a rough approximation of the singularity across x = 0
     """
     return (psi_x(z, -dx/2, beta) + psi_x(z, dx/2, beta))/2
 
-           
 
+def alpha_where_z_equals_zero(x, beta):
+    """
+    Evaluate alpha(z,x) when z is zero.
+    Eq. (24) from Ref[1] simplifies to a quadratic equation for alpha^2.
+    """
+    b = nu(x,beta)
+    c = -3*(beta**2 * x**2)/4/beta**2/(1+x)
+    root1 = (-b + np.sqrt(b**2 - 4*c))/2
+    # root2 = (-b - np.sqrt(b**2 - 4*c))/2   
+    # since b>0, root2 is always negative and discarded
+    
+    return np.sqrt(root1)
+    
+    
 @np.vectorize
 def ss_ellipf(phi, m):
     y = ss.ellipkinc(phi, m)
