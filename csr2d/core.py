@@ -1,6 +1,7 @@
 import numpy as np
 import scipy.special as ss
 import scipy.signal as ss2
+import scipy
 
 from numpy import abs, sin, cos, real, exp, pi
 
@@ -28,18 +29,7 @@ def psi_x_where_x_equals_zero(z, dx, beta):
     return (psi_x(z, -dx/2, beta) + psi_x(z, dx/2, beta))/2
 
 
-def alpha_where_z_equals_zero(x, beta):
-    """
-    Evaluate alpha(z,x) when z is zero.
-    Eq. (24) from Ref[1] simplifies to a quadratic equation for alpha^2.
-    """
-    b = nu(x,beta)
-    c = -3*(beta**2 * x**2)/4/beta**2/(1+x)
-    root1 = (-b + np.sqrt(b**2 - 4*c))/2
-    # root2 = (-b - np.sqrt(b**2 - 4*c))/2   
-    # since b>0, root2 is always negative and discarded
-    
-    return np.sqrt(root1)
+
     
     
 @np.vectorize
@@ -130,13 +120,27 @@ def m(z, x, beta):
         + Omega(z, x, beta)**(1/3))
 
 
+def alpha_where_z_equals_zero(x, beta):
+    """
+    Evaluate alpha(z,x) when z is zero.
+    Eq. (24) from Ref[1] simplifies to a quadratic equation for alpha^2.
+    """
+    b = nu(x,beta)
+    c = -3*(beta**2 * x**2)/4/beta**2/(1+x)
+    root1 = (-b + np.sqrt(b**2 - 4*c))/2
+    # root2 = (-b - np.sqrt(b**2 - 4*c))/2   
+    # since b>0, root2 is always negative and discarded
+    
+    return np.sqrt(root1)
 
-def alpha(z, x, beta):
+
+def alpha_where_z_not_zero(z, x, beta):
     """
     Eq. (A4) from Ref[1]
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
     """
+    #print('Chris says:', np.where(x == 0))
     arg1 = np.sqrt(2 * abs(m(z, x, beta)))
     arg2 = -2 * (m(z, x, beta) + nu(x, beta))
     arg3 = 2 * eta(z, x, beta) / arg1
@@ -147,6 +151,78 @@ def alpha(z, x, beta):
         np.where(z < 0,
             real(1 / 2 * (-arg1 + np.sqrt(abs(arg2 + arg3)))),
             real(1 / 2 * (arg1 + np.sqrt(abs(arg2 - arg3)))) ) )
+
+def alpha_old(z, x, beta):
+    """
+    Eq. (A4) from Ref[1]
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    """
+    #return np.where(z==0, alpha_where_z_equals_zero(x, beta), alpha_where_z_not_zero(z, x, beta) )
+
+    out = np.empty(x.shape)
+    z_is_zero = z == 0
+    ix1 = np.where(z_is_zero)
+    ix2 = np.where(~z_is_zero)
+    out[ix1] = alpha_where_z_equals_zero(x[ix1], beta[ix1])
+    out[ix2] = alpha_where_z_not_zero(z[ix2], x[ix2], beta[ix2])
+    
+    #print('ix1:', ix1)
+    #print('ix2:', ix2)
+    
+    return out
+
+def alpha(z, x, beta):
+    on_x_axis = z == 0
+    # Check for scalar, then return the normal functions
+    if not isinstance(z, np.ndarray):
+        if on_x_axis:
+            return alpha_where_z_equals_zero(x, beta)
+        else:
+            return alpha_where_z_not_zero(z, x, beta)
+    # Array z
+    out = np.empty(z.shape)
+    ix1 = np.where(on_x_axis)
+    ix2 = np.where(~on_x_axis)
+    
+    if len(ix1)==0:
+        print('ix1:', ix1)
+        print(z)
+    # Check for arrays
+    if isinstance(x, np.ndarray):
+        x1 = x[ix1]
+        x2 = x[ix2]
+    else:
+        x1 = x
+        x2 = x
+    if isinstance(beta, np.ndarray):
+        beta1 = beta[ix1]
+        beta2 = beta[ix2]
+    else:
+        beta1 = beta
+        beta2 = beta
+    out[ix1] = alpha_where_z_equals_zero(x1, beta1)
+    out[ix2] = alpha_where_z_not_zero(z[ix2], x2, beta2)
+    return out
+
+
+
+
+@np.vectorize
+def alpha_exact(z, x, beta):
+    """
+    Exact alpha calculation using numerical root finding.
+    
+    For testing only!
+    
+    Eq. (23) from Ref[1]
+    """
+    
+    f = lambda a: a - beta/2*np.sqrt(x**2 + 4*(1+x)*np.sin(a)**2 ) - z
+    
+    res = scipy.optimize.root_scalar(f, bracket=(-1,1))
+    
+    return res.root
 
 
 def kappa(z, x, beta):

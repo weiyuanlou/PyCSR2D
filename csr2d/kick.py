@@ -1,6 +1,6 @@
 from csr2d.deposit import split_particles, deposit_particles, histogram_cic_2d
 from csr2d.central_difference import central_difference_z
-from csr2d.core import psi_s, psi_x, psi_x_on_x_axis
+from csr2d.core import psi_s, psi_x, psi_x_where_x_equals_zero
 
 import numpy as np
 
@@ -180,7 +180,7 @@ def csr2d_kick_calc(
         psi_x_grid = np.array(list(temp2))
         
         # Replacing the fake zeros along the x_axis ( due to singularity) with averaged value from the nearby grid
-        psi_x_grid[:,nx] = psi_x_on_x_axis(zvec2, dx, beta)
+        psi_x_grid[:,nx] = psi_x_where_x_equals_zero(zvec2, dx, beta)
 
     if debug:
         t4 = time.time()
