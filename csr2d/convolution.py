@@ -25,8 +25,8 @@ def fftconvolve2(rho, *greens):
     """
 
     # FFT Configuration
-    fft  = lambda x: sp_fft.fft2(x,  overwrite_x=False)
-    ifft = lambda x: sp_fft.ifft2(x, overwrite_x=False)    
+    fft  = lambda x: sp_fft.fft2(x,  overwrite_x=True)
+    ifft = lambda x: sp_fft.ifft2(x, overwrite_x=True)    
     
     # Place rho in double-sized array. Should match the shape of green
     n0, n1 = rho.shape

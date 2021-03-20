@@ -69,7 +69,7 @@ def psi_x(z, x, beta):
     T5 = 1 / abs(x) * ellipkinc # psi_phi without e/rho**2 factor
     out = (T1 + T2 + T3 + T4) - 2 / beta2 * T5
 
-    return np.nan_to_num(out)
+    return out
 
 def psi_x_where_x_equals_zero(z, dx, beta):
     """
@@ -137,7 +137,7 @@ def psi_sx(z, x, beta):
     T5 = 1 / abs(x) * ellipkinc # psi_phi without e/rho**2 factor
     out_psi_x = (T1 + T2 + T3 + T4) - 2 / beta2 * T5
 
-    return np.nan_to_num(out_psi_s), np.nan_to_num(out_psi_x )
+    return out_psi_s, out_psi_x
 
 
 

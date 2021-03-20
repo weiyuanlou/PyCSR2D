@@ -271,13 +271,13 @@ def green_meshes(nz, nx, dz, dx, rho=None, beta=None):
     dz = dz/(2*rho)
     
     # Double-sized array for convolution with the density
-    zvec2 = np.arange(-nz,nz,1)*dz # center = 0 is at [nz]
-    xvec2 = np.arange(-nx,nx,1)*dx # center = 0 is at [nx]
+    zvec2 = np.arange(-nz+1,nz+1,1)*dz # center = 0 is at [nz-1]
+    xvec2 = np.arange(-nx+1,nx+1,1)*dx # center = 0 is at [nx-1]
     
     # Corrections to avoid the singularity at x=0
     # This will calculate just off axis. Note that we don't need the last item, 
     # because the density mesh does not span that far
-    xvec2[nx] = -dx/2
+    xvec2[nx-1] = -dx/2
     xvec2[-1] = dx/2 
     
     zm2, xm2 = np.meshgrid(zvec2, xvec2, indexing="ij")
@@ -288,8 +288,8 @@ def green_meshes(nz, nx, dz, dx, rho=None, beta=None):
     #psi_x_grid = psi_x(zm2, xm2, beta)
     
     # Average out the values around x=0
-    psi_s_grid[:,nx] = (psi_s_grid[:,nx] + psi_s_grid[:,-1])/2
-    psi_x_grid[:,nx] = (psi_x_grid[:,nx] + psi_x_grid[:,-1])/2    
+    psi_s_grid[:,nx-1] = (psi_s_grid[:,nx-1] + psi_s_grid[:,-1])/2
+    psi_x_grid[:,nx-1] = (psi_x_grid[:,nx-1] + psi_x_grid[:,-1])/2    
     
     return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2*rho
 
