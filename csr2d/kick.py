@@ -1,6 +1,7 @@
 from csr2d.deposit import split_particles, deposit_particles, histogram_cic_2d
 from csr2d.central_difference import central_difference_z
 from csr2d.core import psi_s, psi_x, psi_x_where_x_equals_zero
+from csr2d.convolution import fftconvolve2
 
 import numpy as np
 
@@ -189,6 +190,10 @@ def csr2d_kick_calc(
     # Compute the wake via 2d convolution
     conv_s = oaconvolve(lambda_grid_filtered_prime, psi_s_grid, mode="same")
     conv_x = oaconvolve(lambda_grid_filtered_prime, psi_x_grid, mode="same")
+    
+    # Alternative method
+    #conv_s, conv_x = fftconvolve2(lambda_grid_filtered_prime, psi_s_grid, psi_x_grid)
+
 
     if debug:
         t5 = time.time()
