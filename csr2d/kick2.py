@@ -291,7 +291,10 @@ def green_meshes(nz, nx, dz, dx, rho=None, beta=None):
     psi_s_grid[:,nx-1] = (psi_s_grid[:,nx-1] + psi_s_grid[:,-1])/2
     psi_x_grid[:,nx-1] = (psi_x_grid[:,nx-1] + psi_x_grid[:,-1])/2    
     
-    return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2*rho
+    # Remake this 
+    xvec2 = np.arange(-nx+1,nx+1,1)*dx*rho
+    
+    return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2
 
 
 
