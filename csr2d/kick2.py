@@ -164,18 +164,9 @@ def csr2d_kick_calc(
         psi_x_grid = psi_x_grid_old
 
     else:
-        # Creating the potential grids
-        zvec2 = np.arange(-nz,nz,1)*dz # center = 0 is at [nz]
-        xvec2 = np.arange(-nx,nx,1)*dx # center = 0 is at [nx]
-        zm2, xm2 = np.meshgrid(zvec2, xvec2, indexing="ij")
-
-        green_sx =  lambda z, x: psi_sx(z/(2*rho), x/rho, beta)
-        
-        psi_s_grid, psi_x_grid=green_sx(zm2, xm2)
-
-        # Replacing the fake zeros along the x_axis ( due to singularity) with averaged value from the nearby grid
-        psi_x_grid[:,nx] = psi_x_where_x_equals_zero(zvec2, dx/rho, beta)
-
+        # Creating the potential grids        
+        psi_s_grid, psi_x_grid, zvec2, xvec2 = green_meshes(nz, nx, dz, dx, rho=rho, beta=beta)  
+    
     if debug:
         t4 = time.time()
         print("Computing potential grids take:", t4 - t3, "s")
@@ -238,6 +229,70 @@ def csr2d_kick_calc(
         )
 
     return result
+
+
+def green_meshes(nz, nx, dz, dx, rho=None, beta=None):
+    """
+    Computes Green funcion meshes for psi_s and psi_x simultaneously.
+    These meshes are in real space (not scaled space).
+    
+    Parameters
+    ----------
+    nz, nx : int
+        Size of the density mesh in z and x
+
+    dz, dx : float
+        Grid spacing of the density mesh in z and x [m]
+        
+    rho : float
+        bending radius (must be positve)
+        
+    beta : float
+        relativistic beta
+    
+    Returns:
+    tuple of:
+        psi_s_grid : np.array
+            Double-sized array for the psi_s Green function
+        
+        psi_x_grid : 
+            Double-sized array for the psi_x Green function
+        
+        zvec2 : array-like
+            Coordinate vector in z (real space) [m]
+
+        xvec2 : array-like
+            Coordinate vector in x (real space) [m]
+    
+    """
+    
+    # Change to internal coordinates
+    dx = dx/rho
+    dz = dz/(2*rho)
+    
+    # Double-sized array for convolution with the density
+    zvec2 = np.arange(-nz,nz,1)*dz # center = 0 is at [nz]
+    xvec2 = np.arange(-nx,nx,1)*dx # center = 0 is at [nx]
+    
+    # Corrections to avoid the singularity at x=0
+    # This will calculate just off axis. Note that we don't need the last item, 
+    # because the density mesh does not span that far
+    xvec2[nx] = -dx/2
+    xvec2[-1] = dx/2 
+    
+    zm2, xm2 = np.meshgrid(zvec2, xvec2, indexing="ij")
+    
+    # Evaluate
+    psi_s_grid, psi_x_grid = psi_sx(zm2, xm2, beta)
+    #psi_s_grid = psi_s(zm2, xm2, beta)
+    #psi_x_grid = psi_x(zm2, xm2, beta)
+    
+    # Average out the values around x=0
+    psi_s_grid[:,nx] = (psi_s_grid[:,nx] + psi_s_grid[:,-1])/2
+    psi_x_grid[:,nx] = (psi_x_grid[:,nx] + psi_x_grid[:,-1])/2    
+    
+    return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2*rho
+
 
 
 def csr1d_steady_state_kick_calc(z, weights, *, nz=100, rho=1, species="electron"):
