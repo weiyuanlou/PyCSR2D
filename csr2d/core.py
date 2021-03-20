@@ -3,8 +3,7 @@ import scipy.special as ss
 import scipy.signal as ss2
 import scipy
 
-from numpy import abs, sin, cos, real, exp, pi
-
+from numpy import abs, sin, cos, real, exp, pi, sqrt
 
 def psi_s(z, x, beta):
     """
@@ -127,11 +126,11 @@ def alpha_where_z_equals_zero(x, beta):
     """
     b = nu(x,beta)
     c = -3*(beta**2 * x**2)/4/beta**2/(1+x)
-    root1 = (-b + np.sqrt(b**2 - 4*c))/2
-    # root2 = (-b - np.sqrt(b**2 - 4*c))/2   
+    root1 = (-b + sqrt(b**2 - 4*c))/2
+    # root2 = (-b - sqrt(b**2 - 4*c))/2   
     # since b>0, root2 is always negative and discarded
     
-    return np.sqrt(root1)
+    return sqrt(root1)
 
 
 def alpha_where_z_not_zero(z, x, beta):
@@ -140,17 +139,14 @@ def alpha_where_z_not_zero(z, x, beta):
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
     """
-    #print('Chris says:', np.where(x == 0))
-    arg1 = np.sqrt(2 * abs(m(z, x, beta)))
+
+    arg1 = sqrt(2 * abs(m(z, x, beta)))
     arg2 = -2 * (m(z, x, beta) + nu(x, beta))
     arg3 = 2 * eta(z, x, beta) / arg1
-    # out1 = real(1/2*(-arg1 + np.sqrt( abs( arg2 + arg3) )))
-    # out2 = real(1/2*( arg1 + np.sqrt( abs( arg2 - arg3) )))
-    # return np.nan_to_num(np.where(z<0, out1, out2))
-    return np.nan_to_num(
-        np.where(z < 0,
-            real(1 / 2 * (-arg1 + np.sqrt(abs(arg2 + arg3)))),
-            real(1 / 2 * (arg1 + np.sqrt(abs(arg2 - arg3)))) ) )
+    
+    zsign=np.sign(z)
+    
+    return np.real(1 / 2 * (zsign*arg1 + sqrt(abs(arg2 -zsign*arg3))))
 
 def alpha_old(z, x, beta):
     """
@@ -218,7 +214,7 @@ def alpha_exact(z, x, beta):
     Eq. (23) from Ref[1]
     """
     
-    f = lambda a: a - beta/2*np.sqrt(x**2 + 4*(1+x)*np.sin(a)**2 ) - z
+    f = lambda a: a - beta/2*sqrt(x**2 + 4*(1+x)*np.sin(a)**2 ) - z
     
     res = scipy.optimize.root_scalar(f, bracket=(-1,1))
     

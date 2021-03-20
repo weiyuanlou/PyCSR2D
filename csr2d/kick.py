@@ -1,7 +1,6 @@
 from csr2d.deposit import split_particles, deposit_particles, histogram_cic_2d
 from csr2d.central_difference import central_difference_z
 from csr2d.core import psi_s, psi_x, psi_x_where_x_equals_zero
-from csr2d.convolution import fftconvolve2
 
 import numpy as np
 
@@ -181,7 +180,7 @@ def csr2d_kick_calc(
         psi_x_grid = np.array(list(temp2))
         
         # Replacing the fake zeros along the x_axis ( due to singularity) with averaged value from the nearby grid
-        psi_x_grid[:,nx] = psi_x_where_x_equals_zero(zvec2, dx, beta)
+        psi_x_grid[:,nx] = psi_x_where_x_equals_zero(zvec2, dx/rho, beta)
 
     if debug:
         t4 = time.time()
@@ -190,10 +189,6 @@ def csr2d_kick_calc(
     # Compute the wake via 2d convolution
     conv_s = oaconvolve(lambda_grid_filtered_prime, psi_s_grid, mode="same")
     conv_x = oaconvolve(lambda_grid_filtered_prime, psi_x_grid, mode="same")
-    
-    # Alternative method
-    #conv_s, conv_x = fftconvolve2(lambda_grid_filtered_prime, psi_s_grid, psi_x_grid)
-
 
     if debug:
         t5 = time.time()
@@ -213,6 +208,10 @@ def csr2d_kick_calc(
     # Calculate the kicks at the particle locations
     delta_kick = kick_factor * Ws_interp.ev(z_b, x_b)
     xp_kick = kick_factor * Wx_interp.ev(z_b, x_b)
+    
+    if debug:
+        t6 = time.time()
+        print("Interpolation takes:", t6 - t5, "s")        
 
     if rho_sign == -1:
         xp_kick = -xp_kick
