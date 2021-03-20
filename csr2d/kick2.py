@@ -1,12 +1,15 @@
 from csr2d.deposit import split_particles, deposit_particles, histogram_cic_2d
 from csr2d.central_difference import central_difference_z
-from csr2d.core import psi_s, psi_x, psi_x_where_x_equals_zero
+from csr2d.core2 import psi_sx, psi_x_where_x_equals_zero
+from csr2d.convolution import fftconvolve2
 
 import numpy as np
 
 from scipy.signal import savgol_filter
 from scipy.interpolate import RectBivariateSpline
 from scipy.signal import convolve2d, fftconvolve, oaconvolve
+from scipy.ndimage import map_coordinates
+
 
 import scipy.constants
 
@@ -34,6 +37,7 @@ def csr2d_kick_calc(
     psi_x_grid_old=None,
     map_f=map,
     species="electron",
+    imethod='map_coordinates',
     debug=False,
 ):
     """
@@ -79,6 +83,11 @@ def csr2d_kick_calc(
     
     species : str
         Particle species. Currently required to be 'electron'
+        
+    imethod : str
+        Interpolation method for kicks. Must be one of:
+            'map_coordinates' (default): uses  scipy.ndimage.map_coordinates 
+            'spline': uses: scipy.interpolate.RectBivariateSpline
     
     debug: bool
         If True, returns the computational grids. 
@@ -125,15 +134,6 @@ def csr2d_kick_calc(
     dx = (xmax - xmin) / (nx - 1)
 
     # Charge deposition
-
-    # Old method
-    # zx_positions = np.stack((z_b, x_b)).T
-    # indexes, contrib = split_particles(zx_positions, charges, mins, maxs, sizes)
-    # t1 = time.time();
-    # charge_grid = deposit_particles(Np, sizes, indexes, contrib)
-    # t2 = time.time();
-
-    # Remi's fast code
     t1 = time.time()
     charge_grid = histogram_cic_2d(z_b, x_b, weight, nz, zmin, zmax, nx, xmin, xmax)
 
@@ -165,20 +165,14 @@ def csr2d_kick_calc(
 
     else:
         # Creating the potential grids
-        #zvec2 = np.linspace(2 * zmin, 2 * zmax, 2 * nz)
-        #xvec2 = np.linspace(2 * xmin, 2 * xmax, 2 * nx)
         zvec2 = np.arange(-nz,nz,1)*dz # center = 0 is at [nz]
         xvec2 = np.arange(-nx,nx,1)*dx # center = 0 is at [nx]
         zm2, xm2 = np.meshgrid(zvec2, xvec2, indexing="ij")
 
-        beta_grid = beta * np.ones(zm2.shape)
-
-        # Map (possibly parallel)
-        temp = map_f(psi_s, zm2 / 2 / rho, xm2 / rho, beta_grid)
-        psi_s_grid = np.array(list(temp))
-        temp2 = map_f(psi_x, zm2 / 2 / rho, xm2 / rho, beta_grid)
-        psi_x_grid = np.array(list(temp2))
+        green_sx =  lambda z, x: psi_sx(z/(2*rho), x/rho, beta)
         
+        psi_s_grid, psi_x_grid=green_sx(zm2, xm2)
+
         # Replacing the fake zeros along the x_axis ( due to singularity) with averaged value from the nearby grid
         psi_x_grid[:,nx] = psi_x_where_x_equals_zero(zvec2, dx/rho, beta)
 
@@ -187,8 +181,7 @@ def csr2d_kick_calc(
         print("Computing potential grids take:", t4 - t3, "s")
 
     # Compute the wake via 2d convolution
-    conv_s = oaconvolve(lambda_grid_filtered_prime, psi_s_grid, mode="same")
-    conv_x = oaconvolve(lambda_grid_filtered_prime, psi_x_grid, mode="same")
+    conv_s, conv_x = fftconvolve2(lambda_grid_filtered_prime, psi_s_grid, psi_x_grid)
 
     if debug:
         t5 = time.time()
@@ -197,21 +190,31 @@ def csr2d_kick_calc(
     Ws_grid = (beta ** 2 / rho) * (conv_s) * (dz * dx)
     Wx_grid = (beta ** 2 / rho) * (conv_x) * (dz * dx)
 
-    # Interpolate Ws and Wx everywhere within the grid
-    Ws_interp = RectBivariateSpline(zvec, xvec, Ws_grid)
-    Wx_interp = RectBivariateSpline(zvec, xvec, Wx_grid)
-
+    # Calculate the kicks at the particle locations
+    
     # Overall factor
     Nb = np.sum(weight) / e_charge
     kick_factor = r_e * Nb / gamma  # m
-
-    # Calculate the kicks at the particle locations
-    delta_kick = kick_factor * Ws_interp.ev(z_b, x_b)
-    xp_kick = kick_factor * Wx_interp.ev(z_b, x_b)
+        
+    # Interpolate Ws and Wx everywhere within the grid
+    if imethod == 'spline':
+        # RectBivariateSpline method
+        Ws_interp = RectBivariateSpline(zvec, xvec, Ws_grid)
+        Wx_interp = RectBivariateSpline(zvec, xvec, Wx_grid)
+        delta_kick = kick_factor * Ws_interp.ev(z_b, x_b)
+        xp_kick = kick_factor * Wx_interp.ev(z_b, x_b)
+    elif imethod == 'map_coordinates':
+        # map_coordinates method. Should match above fairly well. order=1 is even faster.
+        zcoord = (z_b-zmin)/dz
+        xcoord = (x_b-xmin)/dx
+        delta_kick = kick_factor * map_coordinates(Ws_grid, np.array([zcoord, xcoord]), order=2)
+        xp_kick    = kick_factor * map_coordinates(Wx_grid, np.array([zcoord, xcoord]), order=2)    
+    else:
+        raise ValueError(f'Unknown interpolation method: {imethod}')
     
     if debug:
         t6 = time.time()
-        print("Interpolation takes:", t6 - t5, "s")        
+        print(f'Interpolation with {imethod} takes:', t6 - t5, "s")        
 
     if rho_sign == -1:
         xp_kick = -xp_kick
