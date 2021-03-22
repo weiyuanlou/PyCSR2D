@@ -318,7 +318,7 @@ def alpha(z, x, beta2):
     return (zsign*arg1 + np.sqrt(abs(arg2 -zsign*arg3)))/2
 
 
-@vectorize([float64(float64, float64, float64)])
+@vectorize([float64(float64, float64, float64)], target='parallel')
 def psi_s(z, x, beta):
     """
     2D longitudinal potential
@@ -394,7 +394,7 @@ def psi_x(z, x, beta):
     
     return out
 
-@vectorize([float64(float64, float64, float64, float64)])
+@vectorize([float64(float64, float64, float64, float64)], target='parallel')
 def psi_x0(z, x, beta, dx):
     """
     Same as psi_x, but checks for x==0, and averages over +/- dx/2
