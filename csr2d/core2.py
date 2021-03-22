@@ -1,47 +1,34 @@
+
+from numba import vectorize, float64, njit
+# For special functions
+from numba.extending import get_cython_function_address
+import ctypes
+
 import numpy as np
 import scipy.special as ss
 import scipy.signal as ss2
 import scipy
 
-#from numba import jit
-
 from numpy import abs, sin, cos, real, exp, pi, cbrt, sqrt
 
-#@jit(nopython=True)
-def psi_s(z, x, beta):
+
+
+def old_psi_s(z, x, beta):
     """
     2D longitudinal potential
     Eq. (23) from Ref[1] with no constant factor (e*beta**2/2/rho**2).
     Ref[1]: Y. Cai and Yuantao. Ding, PRAB 23, 014402 (2020).
     Note that 'x' here corresponds to 'chi = x / rho' in the paper.
     """
-    #try:
-    
+
     beta2 = beta**2
     
     out = (cos(2 * alpha(z, x, beta2)) - 1 / (1+x)) / (
             kappa(z, x, beta2) - beta * (1+x) * sin(2*alpha(z, x, beta2)))
-    #except ZeroDivisionError:
-        # out = 0
-        # print(f"Oops!  ZeroDivisionError at (z,x)= ({z:5.2f},{x:5.2f}). Returning 0.")
-    return np.nan_to_num(out)
 
-    
-@np.vectorize
-def ss_ellipf(phi, m):
-    y = ss.ellipkinc(phi, m)
-    # y = np.float(y)
-    return y
+    return out
 
-
-@np.vectorize
-def ss_ellipe(phi, m):
-    y = ss.ellipeinc(phi, m)
-    # y = np.float(y)
-    return y
-
-
-def psi_x(z, x, beta):
+def old_psi_x(z, x, beta):
     """
     Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
     Note that 'x' here corresponds to 'chi = x/rho', 
@@ -50,7 +37,7 @@ def psi_x(z, x, beta):
     
     beta2 = beta**2
         
-    alp = alpha(z, x, beta2)
+    alp = old_alpha(z, x, beta2)
     kap = sqrt(x**2 + 4*(1+x) * sin(alp)**2) # kappa(z, x, beta2) inline
     
     sin2a = sin(2*alp)
@@ -58,9 +45,9 @@ def psi_x(z, x, beta):
     
     arg2 = -4 * (1+x) / x**2
     
-    ellipeinc = ss.ellipeinc(alp, arg2)
     ellipkinc = ss.ellipkinc(alp, arg2) 
-
+    ellipeinc = ss.ellipeinc(alp, arg2)
+    
     T1 = (1/abs(x)/(1 + x) * ((2 + 2*x + x**2) * ellipkinc - x**2 * ellipeinc))
     D = kap**2 - beta2 * (1 + x)**2 * sin2a**2
     T2 = ((kap**2 - 2*beta2 * (1+x)**2 + beta2 * (1+x) * (2 + 2*x + x**2) * cos2a)/ beta/ (1+x)/ D)
@@ -69,6 +56,7 @@ def psi_x(z, x, beta):
     T5 = 1 / abs(x) * ellipkinc # psi_phi without e/rho**2 factor
     out = (T1 + T2 + T3 + T4) - 2 / beta2 * T5
 
+    
     return out
 
 def psi_x_where_x_equals_zero(z, dx, beta):
@@ -112,7 +100,7 @@ def psi_sx(z, x, beta):
     
     # beta**2 appears far more than beta. Use this in internal functions
     beta2 = beta**2
-    
+
     alp = alpha(z, x, beta2)
     kap = sqrt(x**2 + 4*(1+x) * sin(alp)**2) # kappa(z, x, beta2) inline
     
@@ -194,12 +182,6 @@ def m(z, x, beta2):
     return (-nu(x, beta2)/3
         + (zeta(z, x, beta2)/3 + nu(x, beta2)**2/36) /omega3
         + omega3)    
-    
-    # Old, slightly different results
-    #return (-nu(x, beta2)/3
-    #    + (zeta(z, x, beta2)/3 + nu(x, beta2)**2/36) * Omega(z, x, beta2)**(-1/3)
-    #    + Omega(z, x, beta2)**(1/3))
-
 
 def alpha_where_z_equals_zero(x, beta2):
     """
@@ -231,7 +213,7 @@ def alpha_where_z_not_zero(z, x, beta2):
     return np.real(1 / 2 * (zsign*arg1 + np.sqrt(abs(arg2 -zsign*arg3))))
 
 
-def alpha(z, x, beta2):
+def old_alpha(z, x, beta2):
     on_x_axis = z == 0
     # Check for scalar, then return the normal functions
     if not isinstance(z, np.ndarray):
@@ -288,79 +270,140 @@ def kappa(z, x, beta2):
     return sqrt(x**2 + 4*(1+x) * sin(alpha(z, x, beta2))**2)
 
 
-### Functions below are obsolete
 
-
-def lambda_p_Gauss(z, x):
+@vectorize([float64(float64, float64, float64)])
+def alpha(z, x, beta2):
     """
-    The z derivative of a 2D Gaussian G(z,x)
-    """
-    sigmaz = 10e-6
-    sigmax = 10e-6
-    return (
-        1/(2*pi*sigmaz*sigmax)
-        * exp(-x**2 / 2 / sigmax**2)
-        * exp(-z**2 / 2 / sigmaz**2)
-        * (-z / sigmaz**2))
-
-
-def make_2dgrid(func, zmin, zmax, dz, xmin, xmax, dx):
-    """
-    Make a 2D grid of a function
-    """
-    zvec = np.arange(zmin, zmax, dz)
-    xvec = np.arange(xmin, xmax, dx)
-    list2d = [[func(i, j) for j in xvec] for i in zvec]
-    return np.array(list2d, dtype=float)
-
-
-def WsOld(gamma, rho, sigmaz, sigmax, dz, dx):
-    """
-    Apply 2D convolution to compute the longitudinal wake Ws on a grid 
-    Also returns the zvec and xvec which define the grid
+    Numba vectorized form of alpha.
+    See: https://numba.pydata.org/numba-doc/dev/user/vectorize.html
     
-    Still needs to improve the convolution step
-    """
-    beta = (1 - 1 / gamma ** 2) ** (1 / 2)
-
-    zvec = np.arange(-5 * sigmaz, 5 * sigmaz, dz)
-    xvec = np.arange(-5 * sigmax, 5 * sigmax, dx)
-    lambdap_list = [[lambda_p_Gauss(i, j) for j in xvec] for i in zvec]
-    lambdap_grid = np.array(lambdap_list, dtype=float)
-
-    zvec2 = np.arange(-10 * sigmaz, 10 * sigmaz, dz)
-    xvec2 = np.arange(-10 * sigmax, 10 * sigmax, dx)
-    psi_s_list = [[psi_s(i / 2 / rho, j, beta) for j in xvec2] for i in zvec2]
-    psi_s_grid = np.array(psi_s_list, dtype=float)
-
-    conv_s = ss2.convolve2d(
-        lambdap_grid, psi_s_grid, mode="same", boundary="fill", fillvalue=0
-    )
-    WsConv = beta ** 2 / rho * conv_s * (dz) * (dx)
-    return zvec, xvec, WsConv
-
-
-def WxOld(gamma, rho, sigmaz, sigmax, dz, dx):
-    """
-    Apply 2D convolution to compute the transverse wake Wx on a grid 
-    Also returns the zvec and xvec which define the grid
     
-    Still needs to improve the convolution step
+    Eq. (6) from Ref[X] using the solution in 
+    Eq. (A4) from Ref[1] 
+    
+    
     """
-    beta = (1 - 1 / gamma ** 2) ** (1 / 2)
+    if z == 0:
+        # Quadratic solution
+        
+        b = 3 * (1 - beta2 - beta2*x) / beta2 / (1+x)    
+        c = -3*(x**2)/(4*(1+x))
+    
+        root1 = (-b + np.sqrt(b**2 - 4*c))/2
+        
+        return np.sqrt(root1)
+        
+    # Quartic solution 
+        
+    # Terms of the depressed quartic equation
+    eta = -6 * z / (beta2 * (1+x))
+    nu = 3 * (1/beta2 - 1 - x) / (1+x)
+    zeta = (3/4) * (4* z**2 /beta2 - x**2) / (1+x)
+    
+    # Omega calc and cube root
+    temp = (eta**2/16 - zeta * nu/6 + nu**3/216)  
+    Omega =  temp + np.sqrt(temp**2 - (zeta/3 + nu**2/36)**3)  
+    #omega3 = np.cbrt(Omega) # Not supported in Numba! See: https://github.com/numba/numba/issues/5385
+    omega3= Omega**(1/3)
+    
+    # Eq. (A2) from Ref[1]
+    m = -nu/3 + (zeta/3 + nu**2/36) /omega3 + omega3
+     
+    arg1 = np.sqrt(2 * abs(m))
+    arg2 = -2 * (m + nu)
+    arg3 = 2 * eta / arg1
+    
+    zsign= np.sign(z)
+    
+    return (zsign*arg1 + np.sqrt(abs(arg2 -zsign*arg3)))/2
 
-    zvec = np.arange(-5 * sigmaz, 5 * sigmaz, dz)
-    xvec = np.arange(-5 * sigmax, 5 * sigmax, dx)
-    lambdap_list = [[lambda_p_Gauss(i, j) for j in xvec] for i in zvec]
-    lambdap_grid = np.array(lambdap_list, dtype=float)
 
-    zvec2 = np.arange(-10 * sigmaz, 10 * sigmaz, dz)
-    xvec2 = np.arange(-10 * sigmax, 10 * sigmax, dx)
-    psi_x_list = [[psi_x(i / 2 / rho, j, beta) for j in xvec2] for i in zvec2]
-    psi_x_grid = np.array(psi_x_list, dtype=float)
+@vectorize([float64(float64, float64, float64)], target='parallel')
+def psi_s(z, x, beta):
+    """
+    2D longitudinal potential
+    
+    Numba vectorized
+    
+    Eq. (23) from Ref[1] with no constant factor (e*beta**2/2/rho**2).
+    Ref[1]: Y. Cai and Yuantao. Ding, PRAB 23, 014402 (2020).
+    Note that 'x' here corresponds to 'chi = x / rho' in the paper.
+    """
+    
+    if z == 0 and x == 0:
+        return 0
+    
+    beta2 = beta**2
+    
+    alp = alpha(z, x, beta2)
+    kap = sqrt(x**2 + 4*(1+x) * sin(alp)**2)
+    
+    out = (cos(2*alp)- 1/(1+x)) / (
+            kap - beta * (1+x) * sin(2*alp))   
 
-    conv_x = ss2.convolve2d(
-        lambdap_grid, psi_x_grid, mode="same", boundary="fill", fillvalue=0
-    )
-    WxConv = beta ** 2 / rho * conv_x * (dz) * (dx)
-    return zvec, xvec, WxConv
+    return out
+
+# Include special functions for Numba
+#
+# Tip from: https://github.com/numba/numba/issues/3086
+# and http://numba.pydata.org/numba-doc/latest/extending/high-level.html
+#
+addr1 = get_cython_function_address('scipy.special.cython_special', 'ellipkinc')
+addr2 = get_cython_function_address('scipy.special.cython_special', 'ellipeinc')
+functype = ctypes.CFUNCTYPE(ctypes.c_double, ctypes.c_double, ctypes.c_double)
+my_ellipkinc = functype(addr1)
+my_ellipeinc = functype(addr2)
+
+
+@vectorize([float64(float64, float64, float64)])
+def psi_x(z, x, beta):
+    """
+    Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    """
+    
+    
+    #if x == 0.0:
+    ## Can't do this   
+    #dx = 1e-15
+    #    return (new_psi_x(z, -dx, beta) + new_psi_x(z, dx, beta))/2
+    
+    beta2 = beta**2
+        
+    alp = alpha(z, x, beta2)
+    kap = sqrt(x**2 + 4*(1+x) * sin(alp)**2) # kappa(z, x, beta2) inline
+    
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp)    
+    
+    arg2 = -4 * (1+x) / x**2
+    
+    F = my_ellipkinc(alp, arg2) 
+    E = my_ellipeinc(alp, arg2)
+    
+    
+    T1 = (1/abs(x)/(1 + x) * ((2 + 2*x + x**2) * F - x**2 * E))
+    D = kap**2 - beta2 * (1 + x)**2 * sin2a**2
+    T2 = ((kap**2 - 2*beta2 * (1+x)**2 + beta2 * (1+x) * (2 + 2*x + x**2) * cos2a)/ beta/ (1+x)/ D)
+    T3 = -kap * sin2a / D
+    T4 = kap * beta2 * (1 + x) * sin2a * cos2a / D
+    T5 = 1 / abs(x) * F # psi_phi without e/rho**2 factor
+    out = (T1 + T2 + T3 + T4) - 2 / beta2 * T5
+
+    
+    return out
+
+@vectorize([float64(float64, float64, float64, float64)], target='parallel')
+def psi_x0(z, x, beta, dx):
+    """
+    Same as psi_x, but checks for x==0, and averages over +/- dx/2
+    
+    """
+    
+    if x == 0:
+        return (psi_x(z, -dx/2, beta) +  psi_x(z, dx/2, beta))/2
+    else:
+        return  psi_x(z, x, beta)
+
+

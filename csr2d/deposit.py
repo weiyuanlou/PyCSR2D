@@ -1,5 +1,5 @@
 import numpy as np
-from numba import jit
+from numba import jit, njit
 import math
 
 def split_particles(position, charge, mins, maxs, sizes):
@@ -128,7 +128,7 @@ def deposit_particles(Np, sizes, indexes, contrib):
 
 
 
-@jit
+@njit(parallel=True)
 def histogram_cic_2d( q1, q2, w,
     nbins_1, bins_start_1, bins_end_1,
     nbins_2, bins_start_2, bins_end_2 ):
@@ -197,7 +197,7 @@ def histogram_cic_2d( q1, q2, w,
     return( hist_data )
 
 
-@jit
+@njit(parallel=True)
 def histogram_cic_3d( q1, q2, q3, w,
     nbins_1, bins_start_1, bins_end_1,
     nbins_2, bins_start_2, bins_end_2,

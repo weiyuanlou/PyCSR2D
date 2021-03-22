@@ -1,6 +1,6 @@
 from csr2d.deposit import split_particles, deposit_particles, histogram_cic_2d
 from csr2d.central_difference import central_difference_z
-from csr2d.core2 import psi_sx, psi_x_where_x_equals_zero
+from csr2d.core2 import psi_sx, psi_x_where_x_equals_zero, psi_s, psi_x0
 from csr2d.convolution import fftconvolve2
 
 import numpy as np
@@ -277,21 +277,24 @@ def green_meshes(nz, nx, dz, dx, rho=None, beta=None):
     # Corrections to avoid the singularity at x=0
     # This will calculate just off axis. Note that we don't need the last item, 
     # because the density mesh does not span that far
-    xvec2[nx-1] = -dx/2
-    xvec2[-1] = dx/2 
+    #xvec2[nx-1] = -dx/2
+    #xvec2[-1] = dx/2 
     
     zm2, xm2 = np.meshgrid(zvec2, xvec2, indexing="ij")
     
     # Evaluate
-    psi_s_grid, psi_x_grid = psi_sx(zm2, xm2, beta)
-    #psi_s_grid = psi_s(zm2, xm2, beta)
-    #psi_x_grid = psi_x(zm2, xm2, beta)
+    #psi_s_grid, psi_x_grid = psi_sx(zm2, xm2, beta)
+    psi_s_grid = psi_s(zm2, xm2, beta) # Numba routines!
+    psi_x_grid = psi_x0(zm2, xm2, beta, dx) # Will average around 0
     
     # Average out the values around x=0
-    psi_s_grid[:,nx-1] = (psi_s_grid[:,nx-1] + psi_s_grid[:,-1])/2
-    psi_x_grid[:,nx-1] = (psi_x_grid[:,nx-1] + psi_x_grid[:,-1])/2    
+    #psi_s_grid[:,nx-1] = (psi_s_grid[:,nx-1] + psi_s_grid[:,-1])/2
+    #psi_x_grid[:,nx-1] = (psi_x_grid[:,nx-1] + psi_x_grid[:,-1])/2    
     
-    return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2*rho
+    # Remake this 
+    #xvec2 = np.arange(-nx+1,nx+1,1)*dx*rho
+    
+    return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2
 
 
 
