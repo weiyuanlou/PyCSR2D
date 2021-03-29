@@ -110,11 +110,6 @@ def csr2d_kick_calc(
     assert species == "electron", "TODO: support species {species}"
     # assert np.sign(rho) == 1, 'TODO: negative rho'
 
-    rho_sign = np.sign(rho)
-    if rho_sign == -1:
-        rho = -rho
-        x_b = -x_b  # flip the beam x coordinate
-
     # Grid setup
     if zlim:
         zmin = zlim[0]
@@ -178,8 +173,8 @@ def csr2d_kick_calc(
         t5 = time.time()
         print("Convolution takes:", t5 - t4, "s")
 
-    Ws_grid = (beta ** 2 / rho) * (conv_s) * (dz * dx)
-    Wx_grid = (beta ** 2 / rho) * (conv_x) * (dz * dx)
+    Ws_grid = (beta ** 2 / abs(rho)) * (conv_s) * (dz * dx)
+    Wx_grid = (beta ** 2 / abs(rho)) * (conv_x) * (dz * dx)
 
     # Calculate the kicks at the particle locations
     
@@ -207,8 +202,6 @@ def csr2d_kick_calc(
         t6 = time.time()
         print(f'Interpolation with {imethod} takes:', t6 - t5, "s")        
 
-    if rho_sign == -1:
-        xp_kick = -xp_kick
 
     result = {"ddelta_ds": delta_kick, "dxp_ds": xp_kick}
 
@@ -265,10 +258,11 @@ def green_meshes(nz, nx, dz, dx, rho=None, beta=None):
             Coordinate vector in x (real space) [m]
     
     """
+    rho_sign = 1 if rho>=0 else -1
     
     # Change to internal coordinates
     dx = dx/rho
-    dz = dz/(2*rho)
+    dz = dz/(2*abs(rho))
     
     # Double-sized array for convolution with the density
     zvec2 = np.arange(-nz+1,nz+1,1)*dz # center = 0 is at [nz-1]
@@ -285,7 +279,7 @@ def green_meshes(nz, nx, dz, dx, rho=None, beta=None):
     # Evaluate
     #psi_s_grid, psi_x_grid = psi_sx(zm2, xm2, beta)
     psi_s_grid = psi_s(zm2, xm2, beta) # Numba routines!
-    psi_x_grid = psi_x0(zm2, xm2, beta, dx) # Will average around 0
+    psi_x_grid = rho_sign*psi_x0(zm2, xm2, beta, abs(dx)) # Will average around 0
     
     # Average out the values around x=0
     #psi_s_grid[:,nx-1] = (psi_s_grid[:,nx-1] + psi_s_grid[:,-1])/2
@@ -294,7 +288,7 @@ def green_meshes(nz, nx, dz, dx, rho=None, beta=None):
     # Remake this 
     #xvec2 = np.arange(-nx+1,nx+1,1)*dx*rho
     
-    return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2
+    return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2*rho
 
 
 
