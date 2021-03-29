@@ -11,7 +11,7 @@ def central_difference_z(grid, Nz, Nx, dz, order=1):
         
         # Endpoints with 2nd order accuracy
         prime_grid[0]    = ((-3/2)*grid[0]   + 2*grid[1]    - (1/2)*grid[2]) / dz
-        prime_grid[nz-1] = ((1/2)*grid[nz-3] - 2*grid[nz-2] + (3/2)*grid[nz-1]) / dz
+        prime_grid[Nz-1] = ((1/2)*grid[Nz-3] - 2*grid[Nz-2] + (3/2)*grid[Nz-1]) / dz
         
     elif (order==2):
         grid_temp = np.vstack((np.zeros(Nx), np.zeros(Nx), grid, np.zeros(Nx), np.zeros(Nx)))
