@@ -27,10 +27,13 @@
 
 !----MODE X ----
 &tao_beam_init
-  beam_init%position_file = '/global/u2/w/wlou1991/CSR2D/gathering/Glen_beam_Np1M.txt'
+   ! beam_init%position_file = '../../chicane/Beam_in_10k.h5'
+  !beam_init%position_file = '/global/u2/w/wlou1991/CSR2D/gathering/Glen_beam_Np1M.txt'
   !!beam_init%position_file = '/global/u2/w/wlou1991/CSR2D/gathering/Yunhai_2dcsr_beam_Np1M_zero_pz.txt'
   !beam_init%position_file = '/global/u2/w/wlou1991/CSR2D/gathering/Yunhai_2dcsr_beam_Np200k.txt'
-  !!!beam_init%n_particle = 1000000
+  
+  
+  beam_init%n_particle = 1000000
   !track_start = 'BEGINNING'
   beam_dump_file = 'beam_dump.h5'
   beam_dump_at = 'MARKER::M*'
@@ -41,13 +44,13 @@
   !beam_init%random_engine = 'pseudo'
   ix_universe = 1
   beam_saved_at =  "MARKER::*"
-  !beam_init%a_norm_emit = 1.0e-6
-  !beam_init%b_norm_emit = 1.0e-6
-  !beam_init%dPz_dz = 0.0
-  !beam_init%n_bunch = 1
-  !beam_init%bunch_charge = 77.0e-12
-  !beam_init%sig_pz = 1e-9
-  !beam_init%sig_z = 0.000899377 ! 3 ps * cLight
+  beam_init%a_norm_emit = 1.0e-6
+  beam_init%b_norm_emit = 1.0e-6
+  beam_init%dPz_dz = 0.0
+  beam_init%n_bunch = 1
+  beam_init%bunch_charge = 1e-9
+  beam_init%sig_pz = 1e-9
+  beam_init%sig_z = 20e-6
 /
 
 !------------------------Data--------------------------------------------

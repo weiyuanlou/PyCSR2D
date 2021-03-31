@@ -292,7 +292,7 @@ def green_meshes(nz, nx, dz, dx, rho=None, beta=None):
 
 
 
-def csr1d_steady_state_kick_calc(z, weights, *, nz=100, rho=1, species="electron"):
+def csr1d_steady_state_kick_calc(z, weights, nz=100, rho=1, species="electron", normalized_units=False):
 
     """
 
@@ -317,12 +317,18 @@ def csr1d_steady_state_kick_calc(z, weights, *, nz=100, rho=1, species="electron
     species : str
         Particle species. Currently required to be 'electron'   
         
+    normalized_units : bool
+        If True, will return in normalized units [1/m^2]
+            This multiplied by Qtot / e_charge * r_e * mec2 gives:
+        Otherwise, units of [eV/m] are returned (default).
+        Default: False
+        
     Returns
     -------
     dict with:
     
         denergy_ds : np.array
-            energy kick for each particle [eV/m]
+            energy kick for each particle in [eV/m], or [1/m^2] if normalized_units=True
             
         wake : np.array
             wake array that kicks were interpolated on
@@ -350,10 +356,12 @@ def csr1d_steady_state_kick_calc(z, weights, *, nz=100, rho=1, species="electron
 
     # Green function
     zi = np.arange(0, zmax - zmin, dz)
-    factor = (
-        -3 ** (2 / 3) * Qtot / e_charge * r_e * mec2 * rho ** (-2 / 3)
-    )  # factor for denergy/dz [eV/m]
+    #factor =
     # factor = -3**(2/3) * Qtot/e_charge * r_e * rho**(-2/3) / gamma  # factor for ddelta/ds [1/m]
+    if normalized_units:
+        factor =  -3**(2/3) * rho**(-2/3) # factor for normalized uinits [1/m^2]
+    else:
+        factor =  ( -3**(2/3) * Qtot / e_charge * r_e * mec2 * rho**(-2/3)  )  # factor for denergy/dz [eV/m]
     green = factor * np.diff(zi ** (2 / 3))
 
     # Convolve to get wake

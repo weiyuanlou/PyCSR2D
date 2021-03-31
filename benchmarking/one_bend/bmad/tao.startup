@@ -1,0 +1,18 @@
+
+
+alias vim sp vim [[1]]
+
+call CSR.tao
+beamon
+write beam -at end END_csr1d.h5
+
+beamoff
+set lattice model=design
+
+call 3DCSR.tao
+beamon
+write beam -at end END_csr3d.h5
+
+
+
+
