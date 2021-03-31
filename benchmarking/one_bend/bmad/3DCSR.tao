@@ -1,0 +1,24 @@
+alias snp set beam_init n_particle = [[1]]
+alias snb set csr_param n_bin = [[1]]
+
+
+alias beamoff set global track_type = single
+alias beamon set global track_type = beam
+
+!!======== 3D CSR Parameters ============================================
+
+
+
+set bmad_com csr_and_space_charge_on = T
+
+set ele * csr_method = off
+set ele * space_charge_method = off
+
+!set ele B csr_method = off
+!set ele B csr_method = 1_dim
+set ele B csr_method =  Steady_State_3D
+
+set csr_param ds_track_step = 0.1
+set csr_param csr3d_mesh_size          = 256 128 512
+
+!beamon

@@ -4,72 +4,75 @@ beginning[alpha_a] = 0.07195534
 beginning[beta_b] = 12.30035831
 beginning[alpha_b] = 0.04071661
 
-
 beginning[eta_x] =  0.01208662
 beginning[etap_x] = -0.04833706
 
-beginning[e_tot] = 9804 * 510998.950   !! gamma = 9804
+beginning[e_tot] = 9804 * m_electron   !! gamma = 9804
 
 parameter[geometry] = open
 parameter[particle] = electron
 
-b0 : sbend, L = 0.9, rho = 10.34   ! This bend exists to omit the entrance wake into the following bend.
+my_rho = 10.34
+
+b0 : sbend, L = 1, rho = my_rho   ! This bend exists to omit the entrance wake into the following bend.
+
 BEAM0: MARKER
-b : sbend, L = 0.5, rho = 10.34
-!!!!b : sbend, L = 0.5, rho = 5 , FRINGE_TYPE = FULL
+
+b : sbend, L = 0.5, rho = my_rho
+
 
 m0: marker, superimpose, ref = b, offset = 0.0, ref_origin = beginning
 
-m1: marker, superimpose, ref = b, offset = 0.01, ref_origin = beginning
-m2: marker, superimpose, ref = b, offset = 0.02, ref_origin = beginning
-m3: marker, superimpose, ref = b, offset = 0.03, ref_origin = beginning
-m4: marker, superimpose, ref = b, offset = 0.04, ref_origin = beginning
-m5: marker, superimpose, ref = b, offset = 0.05, ref_origin = beginning
-m6: marker, superimpose, ref = b, offset = 0.06, ref_origin = beginning
-m7: marker, superimpose, ref = b, offset = 0.07, ref_origin = beginning
-m8: marker, superimpose, ref = b, offset = 0.08, ref_origin = beginning
-m9: marker, superimpose, ref = b, offset = 0.09, ref_origin = beginning
-m10: marker, superimpose, ref = b, offset = 0.1, ref_origin = beginning
-m11: marker, superimpose, ref = b, offset = 0.11, ref_origin = beginning
-m12: marker, superimpose, ref = b, offset = 0.12, ref_origin = beginning
-m13: marker, superimpose, ref = b, offset = 0.13, ref_origin = beginning
-m14: marker, superimpose, ref = b, offset = 0.14, ref_origin = beginning
-m15: marker, superimpose, ref = b, offset = 0.15, ref_origin = beginning
-m16: marker, superimpose, ref = b, offset = 0.16, ref_origin = beginning
-m17: marker, superimpose, ref = b, offset = 0.17, ref_origin = beginning
-m18: marker, superimpose, ref = b, offset = 0.18, ref_origin = beginning
-m19: marker, superimpose, ref = b, offset = 0.19, ref_origin = beginning
-m20: marker, superimpose, ref = b, offset = 0.2, ref_origin = beginning
-m21: marker, superimpose, ref = b, offset = 0.21, ref_origin = beginning
-m22: marker, superimpose, ref = b, offset = 0.22, ref_origin = beginning
-m23: marker, superimpose, ref = b, offset = 0.23, ref_origin = beginning
-m24: marker, superimpose, ref = b, offset = 0.24, ref_origin = beginning
-m25: marker, superimpose, ref = b, offset = 0.25, ref_origin = beginning
-m26: marker, superimpose, ref = b, offset = 0.26, ref_origin = beginning
-m27: marker, superimpose, ref = b, offset = 0.27, ref_origin = beginning
-m28: marker, superimpose, ref = b, offset = 0.28, ref_origin = beginning
-m29: marker, superimpose, ref = b, offset = 0.29, ref_origin = beginning
-m30: marker, superimpose, ref = b, offset = 0.3, ref_origin = beginning
-m31: marker, superimpose, ref = b, offset = 0.31, ref_origin = beginning
-m32: marker, superimpose, ref = b, offset = 0.32, ref_origin = beginning
-m33: marker, superimpose, ref = b, offset = 0.33, ref_origin = beginning
-m34: marker, superimpose, ref = b, offset = 0.34, ref_origin = beginning
-m35: marker, superimpose, ref = b, offset = 0.35, ref_origin = beginning
-m36: marker, superimpose, ref = b, offset = 0.36, ref_origin = beginning
-m37: marker, superimpose, ref = b, offset = 0.37, ref_origin = beginning
-m38: marker, superimpose, ref = b, offset = 0.38, ref_origin = beginning
-m39: marker, superimpose, ref = b, offset = 0.39, ref_origin = beginning
-m40: marker, superimpose, ref = b, offset = 0.4, ref_origin = beginning
-m41: marker, superimpose, ref = b, offset = 0.41, ref_origin = beginning
-m42: marker, superimpose, ref = b, offset = 0.42, ref_origin = beginning
-m43: marker, superimpose, ref = b, offset = 0.43, ref_origin = beginning
-m44: marker, superimpose, ref = b, offset = 0.44, ref_origin = beginning
-m45: marker, superimpose, ref = b, offset = 0.45, ref_origin = beginning
-m46: marker, superimpose, ref = b, offset = 0.46, ref_origin = beginning
-m47: marker, superimpose, ref = b, offset = 0.47, ref_origin = beginning
-m48: marker, superimpose, ref = b, offset = 0.48, ref_origin = beginning
-m49: marker, superimpose, ref = b, offset = 0.49, ref_origin = beginning
-m50: marker, superimpose, ref = b, offset = 0.5, ref_origin = beginning
+! m1: marker, superimpose, ref = b, offset = 0.01, ref_origin = beginning
+! m2: marker, superimpose, ref = b, offset = 0.02, ref_origin = beginning
+! m3: marker, superimpose, ref = b, offset = 0.03, ref_origin = beginning
+! m4: marker, superimpose, ref = b, offset = 0.04, ref_origin = beginning
+! m5: marker, superimpose, ref = b, offset = 0.05, ref_origin = beginning
+! m6: marker, superimpose, ref = b, offset = 0.06, ref_origin = beginning
+! m7: marker, superimpose, ref = b, offset = 0.07, ref_origin = beginning
+! m8: marker, superimpose, ref = b, offset = 0.08, ref_origin = beginning
+! m9: marker, superimpose, ref = b, offset = 0.09, ref_origin = beginning
+! m10: marker, superimpose, ref = b, offset = 0.1, ref_origin = beginning
+! m11: marker, superimpose, ref = b, offset = 0.11, ref_origin = beginning
+! m12: marker, superimpose, ref = b, offset = 0.12, ref_origin = beginning
+! m13: marker, superimpose, ref = b, offset = 0.13, ref_origin = beginning
+! m14: marker, superimpose, ref = b, offset = 0.14, ref_origin = beginning
+! m15: marker, superimpose, ref = b, offset = 0.15, ref_origin = beginning
+! m16: marker, superimpose, ref = b, offset = 0.16, ref_origin = beginning
+! m17: marker, superimpose, ref = b, offset = 0.17, ref_origin = beginning
+! m18: marker, superimpose, ref = b, offset = 0.18, ref_origin = beginning
+! m19: marker, superimpose, ref = b, offset = 0.19, ref_origin = beginning
+! m20: marker, superimpose, ref = b, offset = 0.2, ref_origin = beginning
+! m21: marker, superimpose, ref = b, offset = 0.21, ref_origin = beginning
+! m22: marker, superimpose, ref = b, offset = 0.22, ref_origin = beginning
+! m23: marker, superimpose, ref = b, offset = 0.23, ref_origin = beginning
+! m24: marker, superimpose, ref = b, offset = 0.24, ref_origin = beginning
+! m25: marker, superimpose, ref = b, offset = 0.25, ref_origin = beginning
+! m26: marker, superimpose, ref = b, offset = 0.26, ref_origin = beginning
+! m27: marker, superimpose, ref = b, offset = 0.27, ref_origin = beginning
+! m28: marker, superimpose, ref = b, offset = 0.28, ref_origin = beginning
+! m29: marker, superimpose, ref = b, offset = 0.29, ref_origin = beginning
+! m30: marker, superimpose, ref = b, offset = 0.3, ref_origin = beginning
+! m31: marker, superimpose, ref = b, offset = 0.31, ref_origin = beginning
+! m32: marker, superimpose, ref = b, offset = 0.32, ref_origin = beginning
+! m33: marker, superimpose, ref = b, offset = 0.33, ref_origin = beginning
+! m34: marker, superimpose, ref = b, offset = 0.34, ref_origin = beginning
+! m35: marker, superimpose, ref = b, offset = 0.35, ref_origin = beginning
+! m36: marker, superimpose, ref = b, offset = 0.36, ref_origin = beginning
+! m37: marker, superimpose, ref = b, offset = 0.37, ref_origin = beginning
+! m38: marker, superimpose, ref = b, offset = 0.38, ref_origin = beginning
+! m39: marker, superimpose, ref = b, offset = 0.39, ref_origin = beginning
+! m40: marker, superimpose, ref = b, offset = 0.4, ref_origin = beginning
+! m41: marker, superimpose, ref = b, offset = 0.41, ref_origin = beginning
+! m42: marker, superimpose, ref = b, offset = 0.42, ref_origin = beginning
+! m43: marker, superimpose, ref = b, offset = 0.43, ref_origin = beginning
+! m44: marker, superimpose, ref = b, offset = 0.44, ref_origin = beginning
+! m45: marker, superimpose, ref = b, offset = 0.45, ref_origin = beginning
+! m46: marker, superimpose, ref = b, offset = 0.46, ref_origin = beginning
+! m47: marker, superimpose, ref = b, offset = 0.47, ref_origin = beginning
+! m48: marker, superimpose, ref = b, offset = 0.48, ref_origin = beginning
+! m49: marker, superimpose, ref = b, offset = 0.49, ref_origin = beginning
+! m50: marker, superimpose, ref = b, offset = 0.5, ref_origin = beginning
 
 
 !lat: line = ( BEAM0, b)
