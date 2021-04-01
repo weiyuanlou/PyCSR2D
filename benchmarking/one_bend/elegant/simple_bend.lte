@@ -7,7 +7,7 @@ B1: CSRCSBEND, &
   STEADY_STATE=1, &
   BINS=1000, &
   N_KICKS= 2, &
-  CSR=1,
+  CSR=1, &
   OUTPUT_FILE = 'csr_wake_elegant.dat'
   !!INTEGRATION_ORDER=4, &
 
