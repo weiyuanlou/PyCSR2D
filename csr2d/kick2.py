@@ -206,6 +206,7 @@ def csr2d_kick_calc(
     result = {"ddelta_ds": delta_kick, "dxp_ds": xp_kick}
 
     if debug:
+        timing = np.array([t2-t1, t4-t3, t5-t4, t6-t5])
         result.update(
             {
                 "zvec": zvec,
@@ -218,6 +219,7 @@ def csr2d_kick_calc(
                 "psi_x_grid": psi_x_grid,
                 "charge_grid": charge_grid,
                 "lambda_grid_filtered_prime": lambda_grid_filtered_prime,
+                "timing": timing
             }
         )
 
