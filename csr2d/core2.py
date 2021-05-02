@@ -407,3 +407,48 @@ def psi_x0(z, x, beta, dx):
         return  psi_x(z, x, beta)
 
 
+
+### Transient fields and potentials
+
+
+@vectorize([float64(float64, float64, float64, float64, float64)])
+def Es_case_A(z, x, beta, eta, alp):
+    """
+    Eq.(?) from Ref[2] with no constant factor e/gamma**2/rho**2.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    Note that eta here is H/rho, not to be confused with the eta function.
+    """
+        
+    #alp = alpha(z, x, beta2)
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp) 
+    kap = sqrt( eta**2 + x**2 + 4*(1+x)*sin(alp)**2 + 2*eta*(1+x)*sin2a) # kappa for case A
+    
+    N = sin2a + (eta - beta*kap)*cos2a
+    D = kap - beta*(eta + (1+x)*sin2a)
+    
+    return N/D**3
+    
+
+@vectorize([float64(float64, float64, float64, float64, float64)])
+def Fx_case_A(z, x, beta, eta, alp):
+    """
+    Eq.(?) from Ref[2] with no constant factor e/gamma**2/rho**2.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    Note that eta here is H/rho, not to be confused with the eta function.
+    """
+        
+    #alp = alpha(z, x, beta2)
+    beta2 = beta**2
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp) 
+    kap = sqrt( H_over_rho**2 + x**2 + 4*(1+x)*sin(alp)**2 +2*H_over_rho*(1+x)*sin2a) # kappa for case A
+    
+    N1 = (1 + beta2)*(1+x)
+    N2 = (1 + beta2*(1+x)**2)*cos2a
+    N3 = (eta - beta*kap)*sin2a
+    D = kap - beta*(eta + (1+x)*sin2a)
+    
+    return (N1+N2+N3)/D**3
