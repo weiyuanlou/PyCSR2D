@@ -444,7 +444,7 @@ def Fx_case_A(z, x, beta, eta, alp):
     beta2 = beta**2
     sin2a = sin(2*alp)
     cos2a = cos(2*alp) 
-    kap = sqrt( H_over_rho**2 + x**2 + 4*(1+x)*sin(alp)**2 +2*H_over_rho*(1+x)*sin2a) # kappa for case A
+    kap = sqrt( eta**2 + x**2 + 4*(1+x)*sin(alp)**2 +2*eta*(1+x)*sin2a) # kappa for case A
     
     N1 = (1 + beta2)*(1+x)
     N2 = (1 + beta2*(1+x)**2)*cos2a
