@@ -410,19 +410,40 @@ def psi_x0(z, x, beta, dx):
 
 ### Transient fields and potentials
 
+@vectorize([float64(float64, float64, float64, float64)])
+def eta_case_A(z, x, beta2, alp):
+    """
+    Eq.(?) from Ref[1] slide 11
+    "eta" here is H/rho, not to be confused with the eta function.
+    "alp" here is half of the bending angle, not the alpha function.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    """
+    sin2a = sin(2*alp)
+    
+    a = (1-beta2)/4
+    b = alp - z - beta2*(1+x)*sin2a/2
+    c = alp**2 - 2*alp*z + z**2 - beta2*x**2/4 - beta2*(1+x)*sin(alp)**2
+    
+    return (-b + sqrt(b**2 - 4*a*c)) / (2*a)
 
-@vectorize([float64(float64, float64, float64, float64, float64)])
-def Es_case_A(z, x, beta, eta, alp):
+
+@vectorize([float64(float64, float64, float64, float64)])
+def Es_case_A(z, x, beta, alp):
     """
     Eq.(?) from Ref[2] with no constant factor e/gamma**2/rho**2.
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
-    Note that eta here is H/rho, not to be confused with the eta function.
+    'alp' is half the observational angle here.
     """
-        
-    #alp = alpha(z, x, beta2)
+
+    if z == 0 and x == 0 and alp==0:
+        return 0
+    
+    beta2 = beta**2
     sin2a = sin(2*alp)
     cos2a = cos(2*alp) 
+    eta = eta_case_A(z, x, beta2, alp)
     kap = sqrt( eta**2 + x**2 + 4*(1+x)*sin(alp)**2 + 2*eta*(1+x)*sin2a) # kappa for case A
     
     N = sin2a + (eta - beta*kap)*cos2a
@@ -430,25 +451,133 @@ def Es_case_A(z, x, beta, eta, alp):
     
     return N/D**3
     
-
-@vectorize([float64(float64, float64, float64, float64, float64)])
-def Fx_case_A(z, x, beta, eta, alp):
+    
+@vectorize([float64(float64, float64, float64, float64)])
+def Fx_case_A(z, x, beta, alp):
     """
-    Eq.(?) from Ref[2] with no constant factor e/gamma**2/rho**2.
+    Eq.(?) from Ref[2] with no constant factor e**2/gamma**2/rho**2.
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
-    Note that eta here is H/rho, not to be confused with the eta function.
+    'alp' is half the observational angle here.
     """
         
-    #alp = alpha(z, x, beta2)
     beta2 = beta**2
     sin2a = sin(2*alp)
     cos2a = cos(2*alp) 
-    kap = sqrt( eta**2 + x**2 + 4*(1+x)*sin(alp)**2 +2*eta*(1+x)*sin2a) # kappa for case A
+    eta = eta_case_A(z, x, beta2, alp)
+    kap = sqrt( eta**2 + x**2 + 4*(1+x)*sin(alp)**2 + 2*eta*(1+x)*sin2a) # kappa for case A
     
     N1 = (1 + beta2)*(1+x)
     N2 = (1 + beta2*(1+x)**2)*cos2a
     N3 = (eta - beta*kap)*sin2a
     D = kap - beta*(eta + (1+x)*sin2a)
+    
+    return (N1+N2+N3)/D**3
+
+
+@vectorize([float64(float64, float64, float64)])
+def Es_case_B(z, x, beta):
+    """
+    Eq.(?) from Ref[2] slide #21 with no constant factor e*beta**2/rho**2.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    """
+  
+    if z == 0 and x == 0:
+        return 0
+    
+    beta2 = beta**2
+    alp = alpha(z, x, beta2)
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp) 
+
+    kap = sqrt(x**2 + 4*(1+x)*sin(alp)**2) # kappa for case B
+    
+    N1 = cos2a - (1+x)
+    N2 = (1+x)*sin2a - beta*kap
+    D = kap - beta*(1+x)*sin2a
+    
+    return N1*N2/D**3
+
+
+@vectorize([float64(float64, float64, float64, float64)], target='parallel')
+def Es_case_B0(z, x, beta, dx):
+    """
+    Same as Es_case_B, but checks for x==0, and averages over +/- dx/2
+    
+    """
+    
+   # if x == 0:
+   #     return (Es_case_B(z, -dx/2, beta) +  Es_case_B(z, dx/2, beta))/2
+    
+    if z == 0:
+        return 0
+    else:
+        return Es_case_B(z, x, beta)
+    
+
+@vectorize([float64(float64, float64, float64, float64, float64)])
+def eta_case_C(z, x, beta2, alp, lamb):
+    """
+    Eq.(?) from Ref[1] slide 11
+    "eta" here is H/rho, not to be confused with the eta function.
+    "alp" here is half of the bending angle, not the alpha function.
+    "lamb" is L/rho, where L is the bunch center location down the bending exit.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    """
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp)
+    
+    a = (1-beta2)/4
+    b = alp - z + lamb/2 - lamb*beta2*cos2a/2 - beta2*(1+x)*sin2a/2
+    c = alp**2 + alp*lamb + (1-beta2)*lamb**2/4 - 2*alp*z - lamb*z + z**2 - beta2*x**2/4 - beta2*(1+x)*sin(alp)**2 - lamb*beta2*sin2a/2
+    
+    return (-b + sqrt(b**2 - 4*a*c)) / (2*a)
+
+
+@vectorize([float64(float64, float64, float64, float64, float64)])
+def Es_case_C(z, x, beta, alp, lamb):
+    """
+    Eq.(?) from Ref[2] with no constant factor e/gamma**2/rho**2.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    'alp' is half the observational angle here.
+    """
+
+    if z == 0 and x == 0 and alp == 0:
+        return 0
+    
+    beta2 = beta**2
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp) 
+    eta = eta_case_C(z, x, beta2, alp, lamb)
+    kap = sqrt( lamb**2 + eta**2 + x**2 + 4*(1+x)*sin(alp)**2 + 2*(lamb + eta*(1+x))*sin2a + 2*lamb*eta*cos2a) # kappa for case C
+    
+    N = lamb + sin2a + (eta - beta*kap)*cos2a
+    D = kap - beta*(eta + lamb*cos2a + (1+x)*sin2a)
+    
+    return N/D**3
+
+
+@vectorize([float64(float64, float64, float64, float64, float64)])
+def Fx_case_C(z, x, beta, alp, lamb):
+    """
+    Eq.(?) from Ref[2] with no constant factor e**2/gamma**2/rho**2.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    'alp' is half the observational angle here.
+    """
+        
+    beta2 = beta**2
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp) 
+    eta = eta_case_C(z, x, beta2, alp, lamb)
+    kap = sqrt( lamb**2 + eta**2 + x**2 + 4*(1+x)*sin(alp)**2 + 2*(lamb + eta*(1+x))*sin2a + 2*lamb*eta*cos2a) # kappa for case C
+    
+    N1 = (1 + beta2)*(1+x)
+    N2 = (1 + beta2*(1+x)**2)*cos2a
+    N3 = (eta - beta*kap + beta2*lamb*(1+x))*sin2a
+    D = kap - beta*(eta + lamb*cos2a + (1+x)*sin2a)
     
     return (N1+N2+N3)/D**3
