@@ -581,3 +581,43 @@ def Fx_case_C(z, x, beta, alp, lamb):
     D = kap - beta*(eta + lamb*cos2a + (1+x)*sin2a)
     
     return (N1+N2+N3)/D**3
+
+
+@np.vectorize
+def alpha_exact_case_D(z, x, beta, lamb):
+    """
+    Exact alpha calculation using numerical root finding.
+
+    """
+    #beta = np.sqrt(beta2)
+    f = lambda a: a + 1/2 * (lamb - beta*sqrt(lamb**2 + x**2 + 4*(1+x)*sin(a)**2 + 2*lamb*sin(2*a)) - z)
+    
+    res = scipy.optimize.root_scalar(f, bracket=(-1,1))
+    
+    return res.root
+
+
+#@vectorize([float64(float64, float64, float64, float64)])
+@np.vectorize
+def Es_case_D(z, x, beta, lamb):
+    """
+    Eq.(?) from Ref[2] slide #21 with no constant factor e*beta**2/rho**2.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    """
+  
+    if z == 0 and x == 0:
+        return 0
+    
+    #beta2 = beta**2
+    alp = alpha_exact_case_D(z, x, beta, lamb)
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp) 
+
+    kap = sqrt(lamb**2 + x**2 + 4*(1+x)*sin(alp)**2 + 2*lamb*sin(2*alp)) # kappa for case D
+    
+    N1 = cos2a - (1+x)
+    N2 = lamb*cos2a + (1+x)*sin2a - beta*kap
+    D = kap - beta*(lamb*cos2a + (1+x)*sin2a)
+    
+    return N1*N2/D**3

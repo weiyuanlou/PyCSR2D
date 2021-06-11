@@ -1,6 +1,6 @@
 from csr2d.deposit import split_particles, deposit_particles, histogram_cic_2d
 from csr2d.central_difference import central_difference_z
-from csr2d.core2 import psi_sx, psi_x_where_x_equals_zero, psi_s, psi_x0, Es_case_B0, Es_case_A, Fx_case_A, Es_case_C, Fx_case_C
+from csr2d.core2 import psi_sx, psi_x_where_x_equals_zero, psi_s, psi_x0, Es_case_B0, Es_case_A, Fx_case_A, Es_case_C, Fx_case_C, Es_case_D
 from csr2d.convolution import fftconvolve2
 
 import numpy as np
@@ -453,6 +453,56 @@ def green_meshes_case_C(nz, nx, dz, dx, rho=None, beta=None, alp=None, lamb=None
     Fx_case_C_grid = Fx_case_C(zm2, xm2, beta, alp, lamb) # Numba routines!
     
     return Es_case_C_grid, Fx_case_C_grid, zvec2*2*rho, xvec2*rho
+
+
+def green_meshes_case_D(nz, nx, dz, dx, rho=None, beta=None, lamb=None):
+    """
+    Computes Green funcion meshes for psi_s and psi_x simultaneously.
+    These meshes are in real space (not scaled space).
+    
+    Parameters
+    ----------
+    nz, nx : int
+        Size of the density mesh in z and x
+
+    dz, dx : float
+        Grid spacing of the density mesh in z and x [m]
+        
+    rho : float
+        bending radius (must be positve)
+        
+    beta : float
+        relativistic beta
+    
+    Returns:
+    tuple of:
+        Es_case_B_grid : np.array
+            Double-sized array for the Es field function of case B
+        
+        zvec2 : array-like
+            Coordinate vector in z (real space) [m]
+
+        xvec2 : array-like
+            Coordinate vector in x (real space) [m]
+    
+    """
+    rho_sign = 1 if rho>=0 else -1
+    
+    # Change to internal coordinates
+    dx = dx/rho
+    dz = dz/(2*abs(rho))
+    
+    # Double-sized array for convolution with the density
+    zvec2 = np.arange(-nz+1,nz+1,1)*dz # center = 0 is at [nz-1]
+    xvec2 = np.arange(-nx+1,nx+1,1)*dx # center = 0 is at [nx-1]
+    
+    
+    zm2, xm2 = np.meshgrid(zvec2, xvec2, indexing="ij")
+    
+    Es_case_D_grid = Es_case_D(zm2, xm2, beta, lamb)
+    
+    return Es_case_D_grid, zvec2*2*rho, xvec2*rho
+
 
 
 def csr1d_steady_state_kick_calc(z, weights, nz=100, rho=1, species="electron", normalized_units=False):
