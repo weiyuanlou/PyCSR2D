@@ -11,6 +11,7 @@ import scipy
 
 from numpy import abs, sin, cos, real, exp, pi, cbrt, sqrt
 
+from quantecon.optimize.root_finding import brentq
 
 
 def old_psi_s(z, x, beta):
@@ -383,14 +384,13 @@ def psi_x(z, x, beta):
     E = my_ellipeinc(alp, arg2)
     
     
-    T1 = (1/abs(x)/(1 + x) * ((2 + 2*x + x**2) * F - x**2 * E))
+    T1 = (1/abs(x)/(1 + x) * ((2 + 2*x + x**2)*F - x**2*E))
     D = kap**2 - beta2 * (1 + x)**2 * sin2a**2
-    T2 = ((kap**2 - 2*beta2 * (1+x)**2 + beta2 * (1+x) * (2 + 2*x + x**2) * cos2a)/ beta/ (1+x)/ D)
+    T2 = ((kap**2 - 2*beta2*(1+x)**2 + beta2*(1+x)*(2 + 2*x + x**2)*cos2a)/ beta/ (1+x)/ D)
     T3 = -kap * sin2a / D
     T4 = kap * beta2 * (1 + x) * sin2a * cos2a / D
     T5 = 1 / abs(x) * F # psi_phi without e/rho**2 factor
     out = (T1 + T2 + T3 + T4) - 2 / beta2 * T5
-
     
     return out
 
@@ -407,8 +407,12 @@ def psi_x0(z, x, beta, dx):
         return  psi_x(z, x, beta)
 
 
+##################################################
+### Transient fields and potentials ##############
+##################################################
 
-### Transient fields and potentials
+
+############ Case A ##############################
 
 @vectorize([float64(float64, float64, float64, float64)])
 def eta_case_A(z, x, beta2, alp):
@@ -468,12 +472,15 @@ def Fx_case_A(z, x, beta, alp):
     kap = sqrt( eta**2 + x**2 + 4*(1+x)*sin(alp)**2 + 2*eta*(1+x)*sin2a) # kappa for case A
     
     N1 = (1 + beta2)*(1+x)
-    N2 = (1 + beta2*(1+x)**2)*cos2a
+    N2 = -(1 + beta2*(1+x)**2)*cos2a
     N3 = (eta - beta*kap)*sin2a
     D = kap - beta*(eta + (1+x)*sin2a)
     
     return (N1+N2+N3)/D**3
 
+
+########### Case B #################################
+########## Note that psi_s and psi_x above are also for case_B
 
 @vectorize([float64(float64, float64, float64)])
 def Es_case_B(z, x, beta):
@@ -516,6 +523,7 @@ def Es_case_B0(z, x, beta, dx):
         return Es_case_B(z, x, beta)
     
 
+############# Case C ####################################
 @vectorize([float64(float64, float64, float64, float64, float64)])
 def eta_case_C(z, x, beta2, alp, lamb):
     """
@@ -576,12 +584,14 @@ def Fx_case_C(z, x, beta, alp, lamb):
     kap = sqrt( lamb**2 + eta**2 + x**2 + 4*(1+x)*sin(alp)**2 + 2*(lamb + eta*(1+x))*sin2a + 2*lamb*eta*cos2a) # kappa for case C
     
     N1 = (1 + beta2)*(1+x)
-    N2 = (1 + beta2*(1+x)**2)*cos2a
+    N2 = -(1 + beta2*(1+x)**2)*cos2a
     N3 = (eta - beta*kap + beta2*lamb*(1+x))*sin2a
     D = kap - beta*(eta + lamb*cos2a + (1+x)*sin2a)
     
     return (N1+N2+N3)/D**3
 
+
+############################### Case D #################################
 
 @np.vectorize
 def alpha_exact_case_D(z, x, beta, lamb):
@@ -596,9 +606,25 @@ def alpha_exact_case_D(z, x, beta, lamb):
     
     return res.root
 
+@njit
+def f_root_case_D(a, z, x, beta, lamb):
+    return a + 1/2 * (lamb - beta* sqrt(lamb**2 + x**2 + 4*(1+x)*sin(a)**2 + 2*lamb*sin(2*a)) - z)
+
+
+#@vectorize([float64(float64, float64, float64, float64)], target='parallel')
+@vectorize([float64(float64, float64, float64, float64)])
+def alpha_exact_case_D_brentq(z, x, beta, lamb):
+    """
+    Exact alpha calculation for case D using numerical Brent's method of root finding.
+
+    """
+    #return brentq(ff, -0.01, 0.1, args=(z, x, beta, lamb))[0]
+    return brentq(f_root_case_D, -1, 1, args=(z, x, beta, lamb))[0]
+
 
 #@vectorize([float64(float64, float64, float64, float64)])
-@np.vectorize
+#@np.vectorize
+@vectorize([float64(float64, float64, float64, float64)])
 def Es_case_D(z, x, beta, lamb):
     """
     Eq.(?) from Ref[2] slide #21 with no constant factor e*beta**2/rho**2.
@@ -609,8 +635,8 @@ def Es_case_D(z, x, beta, lamb):
     if z == 0 and x == 0:
         return 0
     
-    #beta2 = beta**2
-    alp = alpha_exact_case_D(z, x, beta, lamb)
+    #alp = alpha_exact_case_D(z, x, beta, lamb)  # old method
+    alp = alpha_exact_case_D_brentq(z, x, beta, lamb)
     sin2a = sin(2*alp)
     cos2a = cos(2*alp) 
 
