@@ -1,15 +1,16 @@
-from csr2d.deposit import split_particles, deposit_particles, histogram_cic_2d
+from csr2d.deposit import histogram_cic_2d
 from csr2d.central_difference import central_difference_z
-from csr2d.core2 import psi_sx, psi_x_where_x_equals_zero, psi_s, psi_x0, Es_case_B0, Es_case_A, Fx_case_A, Es_case_C, Fx_case_C, Es_case_D
+from csr2d.core2 import psi_sx, psi_s, psi_x0, Es_case_B0, Es_case_A, Fx_case_A, Es_case_C, Fx_case_C, Es_case_D
 from csr2d.convolution import fftconvolve2
 
 import numpy as np
 
 from scipy.signal import savgol_filter
 from scipy.interpolate import RectBivariateSpline
-from scipy.signal import convolve2d, fftconvolve, oaconvolve
+#from scipy.signal import convolve2d, fftconvolve, oaconvolve
 from scipy.ndimage import map_coordinates
 
+from numba import njit
 
 import scipy.constants
 
@@ -103,9 +104,6 @@ def csr2d_kick_calc(
             
         dxp_ds : np.array
             relative x momentum kick [1/m]
-        
-    
-        
     """
     assert species == "electron", "TODO: support species {species}"
     # assert np.sign(rho) == 1, 'TODO: negative rho'
@@ -285,7 +283,7 @@ def green_meshes(nz, nx, dz, dx, rho=None, beta=None):
     
     # Average out the values around x=0
     #psi_s_grid[:,nx-1] = (psi_s_grid[:,nx-1] + psi_s_grid[:,-1])/2
-    #psi_x_grid[:,nx-1] = (psi_x_grid[:,nx-1] + psi_x_grid[:,-1])/2    
+    #psi_x_grid[:,nx-1] = (psi_x_grid[:,nx-1] + psi_x_grsid[:,-1])/2    
     
     # Remake this 
     #xvec2 = np.arange(-nx+1,nx+1,1)*dx*rho
@@ -340,7 +338,6 @@ def green_meshes_case_B(nz, nx, dz, dx, rho=None, beta=None):
     Es_case_B_grid = Es_case_B0(zm2, xm2, beta, dx) # Numba routines!
     
     return Es_case_B_grid, zvec2*2*rho, xvec2*rho
-
 
 
 def green_meshes_case_A(nz, nx, dz, dx, rho=None, beta=None, alp=None):
