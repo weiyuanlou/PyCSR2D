@@ -261,6 +261,20 @@ def alpha_exact(z, x, beta2):
     
     return res.root
 
+@njit
+def f_root_case_B(a, z, x, beta):
+    return a - beta/2 * sqrt(x**2 + 4*(1+x)*sin(a)**2) - z
+
+
+#@vectorize([float64(float64, float64, float64, float64)], target='parallel')
+@vectorize([float64(float64, float64, float64)])
+def alpha_exact_case_B_brentq(z, x, beta):
+    """
+    Exact alpha calculation for case B using numerical Brent's method of root finding.
+    """
+    #return brentq(ff, -0.01, 0.1, args=(z, x, beta, lamb))[0]
+    return brentq(f_root_case_B, -1, 1, args=(z, x, beta))[0]
+
 
 def kappa(z, x, beta2):
     """
@@ -336,7 +350,9 @@ def psi_s(z, x, beta):
     
     beta2 = beta**2
     
-    alp = alpha(z, x, beta2)
+    #alp = alpha(z, x, beta2)  # Use approximate quatic formulas
+    alp = alpha_exact_case_B_brentq(z, x, beta) # Use numerical root finder    
+    
     kap = sqrt(x**2 + 4*(1+x) * sin(alp)**2)
     
     out = (cos(2*alp)- 1/(1+x)) / (
@@ -372,7 +388,9 @@ def psi_x(z, x, beta):
     
     beta2 = beta**2
         
-    alp = alpha(z, x, beta2)
+    alp = alpha(z, x, beta2)  # Use approximate quatic formulas
+    #alp = alpha_exact_case_B_brentq(z, x, beta) # Use numerical root finder
+    
     kap = sqrt(x**2 + 4*(1+x) * sin(alp)**2) # kappa(z, x, beta2) inline
     
     sin2a = sin(2*alp)
@@ -393,6 +411,48 @@ def psi_x(z, x, beta):
     out = (T1 + T2 + T3 + T4) - 2 / beta2 * T5
     
     return out
+
+
+@vectorize([float64(float64, float64, float64)])
+def psi_x_exact(z, x, beta):
+    """
+    Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    """
+    
+    
+    #if x == 0.0:
+    ## Can't do this   
+    #dx = 1e-15
+    #    return (new_psi_x(z, -dx, beta) + new_psi_x(z, dx, beta))/2
+    
+    beta2 = beta**2
+        
+    #alp = alpha(z, x, beta2)  # Use approximate quatic formulas
+    alp = alpha_exact_case_B_brentq(z, x, beta) # Use numerical root finder
+    
+    kap = sqrt(x**2 + 4*(1+x) * sin(alp)**2) # kappa(z, x, beta2) inline
+    
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp)    
+    
+    arg2 = -4 * (1+x) / x**2
+    
+    F = my_ellipkinc(alp, arg2) 
+    E = my_ellipeinc(alp, arg2)
+    
+    
+    T1 = (1/abs(x)/(1 + x) * ((2 + 2*x + x**2)*F - x**2*E))
+    D = kap**2 - beta2 * (1 + x)**2 * sin2a**2
+    T2 = ((kap**2 - 2*beta2*(1+x)**2 + beta2*(1+x)*(2 + 2*x + x**2)*cos2a)/ beta/ (1+x)/ D)
+    T3 = -kap * sin2a / D
+    T4 = kap * beta2 * (1 + x) * sin2a * cos2a / D
+    T5 = 1 / abs(x) * F # psi_phi without e/rho**2 factor
+    out = (T1 + T2 + T3 + T4) - 2 / beta2 * T5
+    
+    return out
+
 
 @vectorize([float64(float64, float64, float64, float64)], target='parallel')
 def psi_x0(z, x, beta, dx):
@@ -481,6 +541,9 @@ def Fx_case_A(z, x, beta, alp):
 
 ########### Case B #################################
 ########## Note that psi_s and psi_x above are also for case_B
+
+
+
 
 @vectorize([float64(float64, float64, float64)])
 def Es_case_B(z, x, beta):
