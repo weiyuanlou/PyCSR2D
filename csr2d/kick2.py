@@ -1,6 +1,6 @@
 from csr2d.deposit import histogram_cic_2d
 from csr2d.central_difference import central_difference_z
-from csr2d.core2 import psi_sx, psi_s, psi_x0, Es_case_B0, Es_case_A, Fx_case_A, Es_case_C, Fx_case_C, Es_case_D
+from csr2d.core2 import psi_sx, psi_s, psi_x0,  psi_x0_no_phi, Es_case_B0, Es_case_A, Fx_case_A, Es_case_C, Fx_case_C, Es_case_D
 from csr2d.convolution import fftconvolve2
 
 import numpy as np
@@ -287,6 +287,60 @@ def green_meshes(nz, nx, dz, dx, rho=None, beta=None):
     
     # Remake this 
     #xvec2 = np.arange(-nx+1,nx+1,1)*dx*rho
+    
+    return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2*rho
+
+def green_meshes_no_phi(nz, nx, dz, dx, rho=None, beta=None):
+    """
+    Computes Green funcion meshes for psi_s and psi_x simultaneously.
+    These meshes are in real space (not scaled space).
+    
+    Parameters
+    ----------
+    nz, nx : int
+        Size of the density mesh in z and x
+
+    dz, dx : float
+        Grid spacing of the density mesh in z and x [m]
+        
+    rho : float
+        bending radius (must be positve)
+        
+    beta : float
+        relativistic beta
+    
+    Returns:
+    tuple of:
+        psi_s_grid : np.array
+            Double-sized array for the psi_s Green function
+        
+        psi_x_grid : 
+            Double-sized array for the psi_x Green function
+        
+        zvec2 : array-like
+            Coordinate vector in z (real space) [m]
+
+        xvec2 : array-like
+            Coordinate vector in x (real space) [m]
+    
+    """
+    rho_sign = 1 if rho>=0 else -1
+    
+    # Change to internal coordinates
+    dx = dx/rho
+    dz = dz/(2*abs(rho))
+    
+    # Double-sized array for convolution with the density
+    zvec2 = np.arange(-nz+1,nz+1,1)*dz # center = 0 is at [nz-1]
+    xvec2 = np.arange(-nx+1,nx+1,1)*dx # center = 0 is at [nx-1]
+    
+    
+    zm2, xm2 = np.meshgrid(zvec2, xvec2, indexing="ij")
+    
+    # Evaluate
+    psi_s_grid = psi_s(zm2, xm2, beta) # Numba routines!
+    psi_x_grid = rho_sign*psi_x0_no_phi(zm2, xm2, beta, abs(dx)) # Will average around 0
+    
     
     return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2*rho
 

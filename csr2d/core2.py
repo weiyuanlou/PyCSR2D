@@ -414,6 +414,40 @@ def psi_x(z, x, beta):
 
 
 @vectorize([float64(float64, float64, float64)])
+def psi_x_no_phi(z, x, beta):
+    """
+    Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
+    The "phi term" is excluded.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    """
+    
+    beta2 = beta**2
+        
+    alp = alpha(z, x, beta2)  # Use approximate quatic formulas
+    #alp = alpha_exact_case_B_brentq(z, x, beta) # Use numerical root finder
+    
+    kap = sqrt(x**2 + 4*(1+x) * sin(alp)**2) # kappa(z, x, beta2) inline
+    
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp)    
+    
+    arg2 = -4 * (1+x) / x**2
+    
+    F = my_ellipkinc(alp, arg2) 
+    E = my_ellipeinc(alp, arg2)
+    
+    
+    T1 = (1/abs(x)/(1 + x) * ((2 + 2*x + x**2)*F - x**2*E))
+    D = kap**2 - beta2 * (1 + x)**2 * sin2a**2
+    T2 = ((kap**2 - 2*beta2*(1+x)**2 + beta2*(1+x)*(2 + 2*x + x**2)*cos2a)/ beta/ (1+x)/ D)
+    T3 = -kap * sin2a / D
+    T4 = kap * beta2 * (1 + x) * sin2a * cos2a / D
+    out = (T1 + T2 + T3 + T4)
+    
+    return out
+
+@vectorize([float64(float64, float64, float64)])
 def psi_x_exact(z, x, beta):
     """
     Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
@@ -467,6 +501,17 @@ def psi_x0(z, x, beta, dx):
         return  psi_x(z, x, beta)
 
 
+@vectorize([float64(float64, float64, float64, float64)], target='parallel')
+def psi_x0_no_phi(z, x, beta, dx):
+    """
+    Same as psi_x, but checks for x==0, and averages over +/- dx/2
+    
+    """
+    
+    if x == 0:
+        return (psi_x_no_phi(z, -dx/2, beta) +  psi_x_no_phi(z, dx/2, beta))/2
+    else:
+        return  psi_x_no_phi(z, x, beta)
 ##################################################
 ### Transient fields and potentials ##############
 ##################################################
