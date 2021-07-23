@@ -511,7 +511,7 @@ def psi_x0_no_phi(z, x, beta, dx):
     if x == 0:
         return (psi_x_no_phi(z, -dx/2, beta) +  psi_x_no_phi(z, dx/2, beta))/2
     else:
-        return  psi_x_no_phi(z, x, beta)
+        return  psi_x(z, x, beta)
 ##################################################
 ### Transient fields and potentials ##############
 ##################################################

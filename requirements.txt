@@ -1,0 +1,6 @@
+scipy
+numpy
+numba
+matplotlib
+quantecon
+tanh-sinh

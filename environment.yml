@@ -1,0 +1,19 @@
+# run: conda env create --file environment.yml
+name: pycsr2d
+channels:
+  - conda-forge
+dependencies:
+  - python=3.8
+  - ipykernel
+  - ipywidgets
+  - jupyterlab
+  - pandas
+  - numpy
+  - scipy
+  - matplotlib
+  - cupy
+  - numba
+  - quantecon
+  - pip
+  - pip:
+        - tanh-sinh
