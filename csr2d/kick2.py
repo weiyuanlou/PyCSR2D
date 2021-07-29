@@ -1,6 +1,6 @@
 from csr2d.deposit import histogram_cic_2d
 from csr2d.central_difference import central_difference_z
-from csr2d.core2 import psi_sx, psi_s, psi_x0,  psi_x0_no_phi, Es_case_B0, Es_case_A, Fx_case_A, Es_case_C, Fx_case_C, Es_case_D
+from csr2d.core2 import psi_sx, psi_s, psi_x0,  psi_x0_hat, Es_case_B0, Es_case_A, Fx_case_A, Es_case_C, Fx_case_C, Es_case_D
 from csr2d.convolution import fftconvolve2
 
 import numpy as np
@@ -290,7 +290,7 @@ def green_meshes(nz, nx, dz, dx, rho=None, beta=None):
     
     return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2*rho
 
-def green_meshes_no_phi(nz, nx, dz, dx, rho=None, beta=None):
+def green_meshes_hat(nz, nx, dz, dx, rho=None, beta=None):
     """
     Computes Green funcion meshes for psi_s and psi_x simultaneously.
     These meshes are in real space (not scaled space).
@@ -339,7 +339,7 @@ def green_meshes_no_phi(nz, nx, dz, dx, rho=None, beta=None):
     
     # Evaluate
     psi_s_grid = psi_s(zm2, xm2, beta) # Numba routines!
-    psi_x_grid = rho_sign*psi_x0_no_phi(zm2, xm2, beta, abs(dx)) # Will average around 0
+    psi_x_grid = rho_sign*psi_x0_hat(zm2, xm2, beta, abs(dx)) # Will average around 0
     
     
     return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2*rho

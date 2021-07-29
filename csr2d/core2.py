@@ -14,6 +14,10 @@ from numpy import abs, sin, cos, real, exp, pi, cbrt, sqrt
 from quantecon.optimize.root_finding import brentq
 
 
+##################################################
+### Old functions (slow or obsolete) #############
+##################################################
+
 def old_psi_s(z, x, beta):
     """
     2D longitudinal potential
@@ -243,6 +247,19 @@ def old_alpha(z, x, beta2):
     return out
 
 
+def kappa(z, x, beta2):
+    """
+    Eq. (13) from Ref[1] with argumaent zeta = 0.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    """
+    return sqrt(x**2 + 4*(1+x) * sin(old_alpha(z, x, beta2))**2)
+
+##################################################################
+
+##################################################
+### S-S potential functions (Case B) #############
+##################################################
 
 
 @np.vectorize
@@ -273,16 +290,7 @@ def alpha_exact_case_B_brentq(z, x, beta):
     Exact alpha calculation for case B using numerical Brent's method of root finding.
     """
     #return brentq(ff, -0.01, 0.1, args=(z, x, beta, lamb))[0]
-    return brentq(f_root_case_B, -1, 1, args=(z, x, beta))[0]
-
-
-def kappa(z, x, beta2):
-    """
-    Eq. (13) from Ref[1] with argumaent zeta = 0.
-    Note that 'x' here corresponds to 'chi = x/rho', 
-    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
-    """
-    return sqrt(x**2 + 4*(1+x) * sin(alpha(z, x, beta2))**2)
+    return brentq(f_root_case_B, -0.5, 1, args=(z, x, beta))[0]
 
 
 
@@ -319,7 +327,7 @@ def alpha(z, x, beta2):
     temp = (eta**2/16 - zeta * nu/6 + nu**3/216)  
     Omega =  temp + np.sqrt(temp**2 - (zeta/3 + nu**2/36)**3)  
     #omega3 = np.cbrt(Omega) # Not supported in Numba! See: https://github.com/numba/numba/issues/5385
-    omega3= Omega**(1/3)
+    omega3 = Omega**(1/3)
     
     # Eq. (A2) from Ref[1]
     m = -nu/3 + (zeta/3 + nu**2/36) /omega3 + omega3
@@ -328,7 +336,7 @@ def alpha(z, x, beta2):
     arg2 = -2 * (m + nu)
     arg3 = 2 * eta / arg1
     
-    zsign= np.sign(z)
+    zsign = np.sign(z)
     
     return (zsign*arg1 + np.sqrt(abs(arg2 -zsign*arg3)))/2
 
@@ -373,18 +381,12 @@ my_ellipeinc = functype(addr2)
 
 
 @vectorize([float64(float64, float64, float64)])
-def psi_x(z, x, beta):
+def psi_x_hat(z, x, beta):
     """
     Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
     """
-    
-    
-    #if x == 0.0:
-    ## Can't do this   
-    #dx = 1e-15
-    #    return (new_psi_x(z, -dx, beta) + new_psi_x(z, dx, beta))/2
     
     beta2 = beta**2
         
@@ -397,10 +399,8 @@ def psi_x(z, x, beta):
     cos2a = cos(2*alp)    
     
     arg2 = -4 * (1+x) / x**2
-    
     F = my_ellipkinc(alp, arg2) 
     E = my_ellipeinc(alp, arg2)
-    
     
     T1 = (1/abs(x)/(1 + x) * ((2 + 2*x + x**2)*F - x**2*E))
     D = kap**2 - beta2 * (1 + x)**2 * sin2a**2
@@ -408,16 +408,17 @@ def psi_x(z, x, beta):
     T3 = -kap * sin2a / D
     T4 = kap * beta2 * (1 + x) * sin2a * cos2a / D
     T5 = 1 / abs(x) * F # psi_phi without e/rho**2 factor
+    
     out = (T1 + T2 + T3 + T4) - 2 / beta2 * T5
     
     return out
 
 
 @vectorize([float64(float64, float64, float64)])
-def psi_x_no_phi(z, x, beta):
+def psi_x(z, x, beta):
     """
     Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
-    The "phi term" is excluded.
+    The "psi_phi" term is excluded.
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
     """
@@ -433,16 +434,15 @@ def psi_x_no_phi(z, x, beta):
     cos2a = cos(2*alp)    
     
     arg2 = -4 * (1+x) / x**2
-    
     F = my_ellipkinc(alp, arg2) 
     E = my_ellipeinc(alp, arg2)
-    
     
     T1 = (1/abs(x)/(1 + x) * ((2 + 2*x + x**2)*F - x**2*E))
     D = kap**2 - beta2 * (1 + x)**2 * sin2a**2
     T2 = ((kap**2 - 2*beta2*(1+x)**2 + beta2*(1+x)*(2 + 2*x + x**2)*cos2a)/ beta/ (1+x)/ D)
     T3 = -kap * sin2a / D
     T4 = kap * beta2 * (1 + x) * sin2a * cos2a / D
+    
     out = (T1 + T2 + T3 + T4)
     
     return out
@@ -451,15 +451,10 @@ def psi_x_no_phi(z, x, beta):
 def psi_x_exact(z, x, beta):
     """
     Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
+    The "psi_phi" term is excluded.
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
     """
-    
-    
-    #if x == 0.0:
-    ## Can't do this   
-    #dx = 1e-15
-    #    return (new_psi_x(z, -dx, beta) + new_psi_x(z, dx, beta))/2
     
     beta2 = beta**2
         
@@ -472,18 +467,16 @@ def psi_x_exact(z, x, beta):
     cos2a = cos(2*alp)    
     
     arg2 = -4 * (1+x) / x**2
-    
     F = my_ellipkinc(alp, arg2) 
     E = my_ellipeinc(alp, arg2)
-    
     
     T1 = (1/abs(x)/(1 + x) * ((2 + 2*x + x**2)*F - x**2*E))
     D = kap**2 - beta2 * (1 + x)**2 * sin2a**2
     T2 = ((kap**2 - 2*beta2*(1+x)**2 + beta2*(1+x)*(2 + 2*x + x**2)*cos2a)/ beta/ (1+x)/ D)
     T3 = -kap * sin2a / D
     T4 = kap * beta2 * (1 + x) * sin2a * cos2a / D
-    T5 = 1 / abs(x) * F # psi_phi without e/rho**2 factor
-    out = (T1 + T2 + T3 + T4) - 2 / beta2 * T5
+
+    out = (T1 + T2 + T3 + T4) 
     
     return out
 
@@ -492,7 +485,6 @@ def psi_x_exact(z, x, beta):
 def psi_x0(z, x, beta, dx):
     """
     Same as psi_x, but checks for x==0, and averages over +/- dx/2
-    
     """
     
     if x == 0:
@@ -502,16 +494,17 @@ def psi_x0(z, x, beta, dx):
 
 
 @vectorize([float64(float64, float64, float64, float64)], target='parallel')
-def psi_x0_no_phi(z, x, beta, dx):
+def psi_x0_hat(z, x, beta, dx):
     """
-    Same as psi_x, but checks for x==0, and averages over +/- dx/2
-    
+    Same as psi_x_hat, but checks for x==0, and averages over +/- dx/2
     """
     
     if x == 0:
-        return (psi_x_no_phi(z, -dx/2, beta) +  psi_x_no_phi(z, dx/2, beta))/2
+        return (psi_x_hat(z, -dx/2, beta) +  psi_x_hat(z, dx/2, beta))/2
     else:
-        return  psi_x(z, x, beta)
+        return  psi_x_hat(z, x, beta)
+    
+    
 ##################################################
 ### Transient fields and potentials ##############
 ##################################################
@@ -586,8 +579,6 @@ def Fx_case_A(z, x, beta, alp):
 
 ########### Case B #################################
 ########## Note that psi_s and psi_x above are also for case_B
-
-
 
 
 @vectorize([float64(float64, float64, float64)])
