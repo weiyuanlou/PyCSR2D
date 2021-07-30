@@ -363,10 +363,38 @@ def psi_s(z, x, beta):
     
     kap = sqrt(x**2 + 4*(1+x) * sin(alp)**2)
     
-    out = (cos(2*alp)- 1/(1+x)) / (
-            kap - beta * (1+x) * sin(2*alp))   
+    out = (cos(2*alp)- 1/(1+x)) / (kap - beta * (1+x) * sin(2*alp))   
 
     return out
+
+
+
+@vectorize([float64(float64, float64, float64)], target='parallel')
+def psi_s_SC(z, x, beta):
+    """
+    2D longitudinal potential ( space charge term )
+    
+    Numba vectorized
+    
+    Eq. (B7) Psi_s(SC) from Ref[1] with no constant factor (e/2/rho**2/gamma**2).
+    Ref[1]: Y. Cai and Yuantao. Ding, PRAB 23, 014402 (2020).
+    Note that 'x' here corresponds to 'chi = x / rho' in the paper.
+    """
+    
+    if z == 0 and x == 0:
+        return 0
+    
+    beta2 = beta**2
+    
+    #alp = alpha(z, x, beta2)  # Use approximate quatic formulas
+    alp = alpha_exact_case_B_brentq(z, x, beta) # Use numerical root finder    
+    
+    kap = sqrt(x**2 + 4*(1+x) * sin(alp)**2)
+    
+    out = -1 / (1+x) / (kap - beta * (1+x) * sin(2*alp))   
+
+    return out
+
 
 # Include special functions for Numba
 #
@@ -383,6 +411,10 @@ my_ellipeinc = functype(addr2)
 @vectorize([float64(float64, float64, float64)])
 def psi_x_hat(z, x, beta):
     """
+    2D horizontal potential ( "psi_phi" term included ) 
+    
+    Numba vectorized
+    
     Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
@@ -417,8 +449,11 @@ def psi_x_hat(z, x, beta):
 @vectorize([float64(float64, float64, float64)])
 def psi_x(z, x, beta):
     """
+    2D longitudinal potential ( "psi_phi" term excluded ) 
+    
+    Numba vectorized    
+
     Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
-    The "psi_phi" term is excluded.
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
     """
@@ -450,8 +485,11 @@ def psi_x(z, x, beta):
 @vectorize([float64(float64, float64, float64)])
 def psi_x_exact(z, x, beta):
     """
+    2D longitudinal potential ( "psi_phi" term excluded ) 
+    
+    Numba vectorized        
+
     Eq.(24) from Ref[1] with argument zeta=0 and no constant factor e*beta**2/2/rho**2.
-    The "psi_phi" term is excluded.
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
     """
@@ -502,8 +540,58 @@ def psi_x0_hat(z, x, beta, dx):
     if x == 0:
         return (psi_x_hat(z, -dx/2, beta) +  psi_x_hat(z, dx/2, beta))/2
     else:
-        return  psi_x_hat(z, x, beta)
+        return psi_x_hat(z, x, beta)
+
     
+@vectorize([float64(float64, float64, float64)])
+def psi_x_SC(z, x, beta):
+    """
+    2D longitudinal potential ( space charge term ) 
+    
+    Numba vectorized    
+    
+    Eq.(B7) Psi_x(SC) from Ref[1] with argument zeta=0 and no constant factor e/2/rho**2/gamma**2.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    """
+    
+    beta2 = beta**2
+        
+    alp = alpha(z, x, beta2)  # Use approximate quatic formulas
+    #alp = alpha_exact_case_B_brentq(z, x, beta) # Use numerical root finder
+    
+    kap = sqrt(x**2 + 4*(1+x) * sin(alp)**2) # kappa(z, x, beta2) inline
+    
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp)    
+    
+    arg2 = -4 * (1+x) / x**2
+    F = my_ellipkinc(alp, arg2) 
+    E = my_ellipeinc(alp, arg2)
+    
+    D = kap**2 - beta2 * (1+x)**2 * sin2a**2
+    
+    T1 = 1/abs(x)/(1 + x)*F
+    T2 = x/(1+x)/(2+x)/abs(x)*E
+    T3 = beta*(cos2a - 1 - x)/D
+    
+    T4 = -kap*x*(2+x)*(beta2*(1+x)**2 - 2)*sin2a/(x**2*(2+x)**2)/D
+    T5 = -kap*beta2*(1+x)*x*(2+x)*sin2a*cos2a/(x**2*(2+x)**2)/D
+    
+    out = (T1 + T2 + T3 + T4 + T5)
+    
+    return out    
+
+@vectorize([float64(float64, float64, float64, float64)], target='parallel')
+def psi_x0_SC(z, x, beta, dx):
+    """
+    Same as psi_x_SC, but checks for x==0, and averages over +/- dx/2
+    """
+    
+    if x == 0:
+        return (psi_x_SC(z, -dx/2, beta) +  psi_x_SC(z, dx/2, beta))/2
+    else:
+        return psi_x_SC(z, x, beta)
     
 ##################################################
 ### Transient fields and potentials ##############
