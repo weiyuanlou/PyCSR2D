@@ -43,9 +43,7 @@ def csr2d_kick_calc(
     debug=False,
 ):
     """
-    
     Calculates the 2D CSR kick on a set of particles with positions `z_b`, `x_b` and charges `charges`.
-    
     
     Parameters
     ----------
@@ -269,31 +267,19 @@ def green_meshes(nz, nx, dz, dx, rho=None, beta=None):
     zvec2 = np.arange(-nz+1,nz+1,1)*dz # center = 0 is at [nz-1]
     xvec2 = np.arange(-nx+1,nx+1,1)*dx # center = 0 is at [nx-1]
     
-    # Corrections to avoid the singularity at x=0
-    # This will calculate just off axis. Note that we don't need the last item, 
-    # because the density mesh does not span that far
-    #xvec2[nx-1] = -dx/2
-    #xvec2[-1] = dx/2 
-    
     zm2, xm2 = np.meshgrid(zvec2, xvec2, indexing="ij")
     
     # Evaluate
     #psi_s_grid, psi_x_grid = psi_sx(zm2, xm2, beta)
     psi_s_grid = psi_s(zm2, xm2, beta) # Numba routines!
-    psi_x_grid = rho_sign*psi_x0(zm2, xm2, beta, abs(dx)) # Will average around 0
-    
-    # Average out the values around x=0
-    #psi_s_grid[:,nx-1] = (psi_s_grid[:,nx-1] + psi_s_grid[:,-1])/2
-    #psi_x_grid[:,nx-1] = (psi_x_grid[:,nx-1] + psi_x_grsid[:,-1])/2    
-    
-    # Remake this 
-    #xvec2 = np.arange(-nx+1,nx+1,1)*dx*rho
-    
+    psi_x_grid = rho_sign * psi_x0(zm2, xm2, beta, abs(dx)) # Will average around 0
+
     return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2*rho
+
 
 def green_meshes_hat(nz, nx, dz, dx, rho=None, beta=None):
     """
-    Computes Green funcion meshes for psi_s and psi_x simultaneously.
+    Computes Green funcion meshes for psi_s and psi_x0_hat simultaneously.
     These meshes are in real space (not scaled space).
     
     Parameters
@@ -325,7 +311,6 @@ def green_meshes_hat(nz, nx, dz, dx, rho=None, beta=None):
             Coordinate vector in x (real space) [m]
     
     """
-    rho_sign = 1 if rho>=0 else -1
     
     # Change to internal coordinates
     dx = dx/rho
@@ -340,15 +325,14 @@ def green_meshes_hat(nz, nx, dz, dx, rho=None, beta=None):
     
     # Evaluate
     psi_s_grid = psi_s(zm2, xm2, beta) # Numba routines!
-    psi_x_grid = rho_sign*psi_x0_hat(zm2, xm2, beta, abs(dx)) # Will average around 0
-    
+    psi_x_grid = psi_x0_hat(zm2, xm2, beta, abs(dx)) # Will average around 0
     
     return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2*rho
 
 
-def green_meshes_SC(nz, nx, dz, dx, rho=None, beta=None):
+def green_meshes_with_SC(nz, nx, dz, dx, rho=None, beta=None):
     """
-    Computes Green funcion meshes for psi_s and psi_x simultaneously.
+    Computes Green funcion meshes for psi_s and psi_x with SC terms included.
     These meshes are in real space (not scaled space).
     
     Parameters
@@ -389,21 +373,18 @@ def green_meshes_SC(nz, nx, dz, dx, rho=None, beta=None):
     # Double-sized array for convolution with the density
     zvec2 = np.arange(-nz+1,nz+1,1)*dz # center = 0 is at [nz-1]
     xvec2 = np.arange(-nx+1,nx+1,1)*dx # center = 0 is at [nx-1]
-    
-    
     zm2, xm2 = np.meshgrid(zvec2, xvec2, indexing="ij")
     
     # Evaluate
-    psi_s_grid = psi_s_SC(zm2, xm2, beta) # Numba routines!
-    psi_x_grid = psi_x0_SC(zm2, xm2, beta, abs(dx)) # Will average around 0
-    
+    psi_s_grid = psi_s(zm2, xm2, beta) + psi_s_SC(zm2, xm2, beta) # Numba routines!
+    psi_x_grid = psi_x0(zm2, xm2, beta, abs(dx)) + psi_x0_SC(zm2, xm2, beta, abs(dx)) # Will average around 0
     
     return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2*rho
 
 
 def green_meshes_case_B(nz, nx, dz, dx, rho=None, beta=None):
     """
-    Computes Green funcion meshes for psi_s and psi_x simultaneously.
+    Computes Green funcion meshes for Es_case_B.
     These meshes are in real space (not scaled space).
     
     Parameters
@@ -452,7 +433,7 @@ def green_meshes_case_B(nz, nx, dz, dx, rho=None, beta=None):
 
 def green_meshes_case_A(nz, nx, dz, dx, rho=None, beta=None, alp=None):
     """
-    Computes Green funcion meshes for psi_s and psi_x simultaneously.
+    Computes Green funcion meshes for Es_case_A and Fx_case_A simultaneously.
     These meshes are in real space (not scaled space).
     
     Parameters
@@ -507,7 +488,7 @@ def green_meshes_case_A(nz, nx, dz, dx, rho=None, beta=None, alp=None):
     
 def green_meshes_case_C(nz, nx, dz, dx, rho=None, beta=None, alp=None, lamb=None):
     """
-    Computes Green funcion meshes for psi_s and psi_x simultaneously.
+    Computes Green funcion meshes for Es_case_C and Fx_case_C simultaneously.
     These meshes are in real space (not scaled space).
     
     Parameters
@@ -564,7 +545,7 @@ def green_meshes_case_C(nz, nx, dz, dx, rho=None, beta=None, alp=None, lamb=None
 
 def green_meshes_case_D(nz, nx, dz, dx, rho=None, beta=None, lamb=None):
     """
-    Computes Green funcion meshes for psi_s and psi_x simultaneously.
+    Computes Green funcion meshes for Es_case_D and Fx_case_D simultaneously.
     These meshes are in real space (not scaled space).
     
     Parameters
@@ -615,9 +596,7 @@ def green_meshes_case_D(nz, nx, dz, dx, rho=None, beta=None, lamb=None):
 def csr1d_steady_state_kick_calc(z, weights, nz=100, rho=1, species="electron", normalized_units=False):
 
     """
-
     Steady State CSR 1D model kick calc
-
     
     Parameters
     ----------
