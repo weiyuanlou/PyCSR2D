@@ -289,6 +289,9 @@ def alpha_exact_case_B_brentq(z, x, beta):
     """
     Exact alpha calculation for case B using numerical Brent's method of root finding.
     """
+    if z == 0 and x == 0:
+        return 0
+    
     #return brentq(ff, -0.01, 0.1, args=(z, x, beta, lamb))[0]
     return brentq(f_root_case_B, -0.5, 1, args=(z, x, beta))[0]
 
@@ -358,8 +361,8 @@ def psi_s(z, x, beta):
     
     beta2 = beta**2
     
-    #alp = alpha(z, x, beta2)  # Use approximate quatic formulas
-    alp = alpha_exact_case_B_brentq(z, x, beta) # Use numerical root finder    
+    alp = alpha(z, x, beta2)  # Use approximate quatic formulas
+    #alp = alpha_exact_case_B_brentq(z, x, beta) # Use numerical root finder    
     
     kap = sqrt(x**2 + 4*(1+x) * sin(alp)**2)
     
@@ -669,10 +672,10 @@ def Fx_case_A(z, x, beta, alp):
 ########## Note that psi_s and psi_x above are also for case_B
 
 
-@vectorize([float64(float64, float64, float64)])
+@vectorize([float64(float64, float64, float64)], target='parallel')
 def Es_case_B(z, x, beta):
     """
-    Eq.(?) from Ref[2] slide #21 with no constant factor e*beta**2/rho**2.
+    Eq.(9) from Ref[1] with zeta set to zero, and no constant factor e*beta**2/rho**2.
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
     """
@@ -694,21 +697,54 @@ def Es_case_B(z, x, beta):
     return N1*N2/D**3
 
 
-@vectorize([float64(float64, float64, float64, float64)], target='parallel')
-def Es_case_B0(z, x, beta, dx):
+@vectorize([float64(float64, float64, float64)], target='parallel')
+def Fx_case_B(z, x, beta):
     """
-    Same as Es_case_B, but checks for x==0, and averages over +/- dx/2
-    
+    Eq.(17) from Ref[1] with zeta set to zero, and no constant factor e*beta**2/rho**2.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
     """
-    
-   # if x == 0:
-   #     return (Es_case_B(z, -dx/2, beta) +  Es_case_B(z, dx/2, beta))/2
-    
-    if z == 0:
+  
+    if z == 0 and x == 0:
         return 0
-    else:
-        return Es_case_B(z, x, beta)
     
+    beta2 = beta**2
+    alp = alpha(z, x, beta2)
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp) 
+
+    kap = sqrt(x**2 + 4*(1+x)*sin(alp)**2) # kappa for case B
+    
+    N1 = sin2a - beta*(1+x)*kap
+    N2 = (1+x)*sin2a - beta*kap
+    D = kap - beta*(1+x)*sin2a
+    
+    return N1*N2/D**3
+   
+@vectorize([float64(float64, float64, float64)], target='parallel')
+def Fx_case_B_Chris(z, x, beta):
+    """
+    CHRIS VERSION WITH NO (1+x) in the first term
+    Eq.(17) from Ref[1] with zeta set to zero, and no constant factor e*beta**2/rho**2.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    """
+  
+    if z == 0 and x == 0:
+        return 0
+    
+    beta2 = beta**2
+    alp = alpha(z, x, beta2)
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp) 
+
+    kap = sqrt(x**2 + 4*(1+x)*sin(alp)**2) # kappa for case B
+    
+    N1 = sin2a - beta*kap
+    N2 = (1+x)*sin2a - beta*kap
+    D = kap - beta*(1+x)*sin2a
+    
+    return N1*N2/D**3
 
 ############# Case C ####################################
 @vectorize([float64(float64, float64, float64, float64, float64)])
