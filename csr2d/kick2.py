@@ -319,8 +319,6 @@ def green_meshes_hat(nz, nx, dz, dx, rho=None, beta=None):
     # Double-sized array for convolution with the density
     zvec2 = np.arange(-nz+1,nz+1,1)*dz # center = 0 is at [nz-1]
     xvec2 = np.arange(-nx+1,nx+1,1)*dx # center = 0 is at [nx-1]
-    
-    
     zm2, xm2 = np.meshgrid(zvec2, xvec2, indexing="ij")
     
     # Evaluate
