@@ -720,11 +720,12 @@ def Fx_case_B(z, x, beta):
     D = kap - beta*(1+x)*sin2a
     
     return N1*N2/D**3
-   
+
 @vectorize([float64(float64, float64, float64)], target='parallel')
-def Fx_case_B_Chris(z, x, beta):
+def Fx_case_B_Chris_NO_SC(z, x, beta):
     """
-    CHRIS VERSION WITH NO (1+x) in the first term
+    CHRIS VERSION WITH NO (1+x) in the first term.
+    The SC term is also included for benchmarking with LW3D.
     Eq.(17) from Ref[1] with zeta set to zero, and no constant factor e*beta**2/rho**2.
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
@@ -744,7 +745,47 @@ def Fx_case_B_Chris(z, x, beta):
     N2 = (1+x)*sin2a - beta*kap
     D = kap - beta*(1+x)*sin2a
     
-    return N1*N2/D**3
+    return (1+x)*(N1*N2 )/D**3
+
+
+@vectorize([float64(float64, float64, float64)], target='parallel')
+def Fx_case_B_Chris(z, x, beta):
+    """
+    CHRIS VERSION WITH NO (1+x) in the first term.
+    The SC term is also included for benchmarking with LW3D.
+    Eq.(17) from Ref[1] with zeta set to zero, and no constant factor e*beta**2/rho**2.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    """
+  
+    if z == 0 and x == 0:
+        return 0
+    
+    beta2 = beta**2
+    alp = alpha(z, x, beta2)
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp) 
+
+    kap = sqrt(x**2 + 4*(1+x)*sin(alp)**2) # kappa for case B
+    
+    N1 = sin2a - beta*kap
+    N2 = (1+x)*sin2a - beta*kap
+    D = kap - beta*(1+x)*sin2a
+    
+    #return (1+x)*(N1*N2 )/D**3
+
+    # Acceleration term only
+    # Fx_acc = (1+x)*(N1*N2 )/D**3
+
+    # Velocity term
+    # with prefactor 1/(gamma*beta)^2 = 1/(gamma^2-1)
+    gamma2 = 1/(1 - beta2)
+    NSC = (1 + beta2 - beta*kap*sin2a + x - cos2a*(1 + beta2*(1 + x)) ) / (gamma2-1) 
+
+    # Total force
+    Fx_total =  (1+x)*(N1*N2 + NSC)/D**3
+
+    return Fx_total
 
 ############# Case C ####################################
 @vectorize([float64(float64, float64, float64, float64, float64)])
