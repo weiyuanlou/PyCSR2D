@@ -748,7 +748,8 @@ def Fx_case_B_Chris_NO_SC(z, x, beta):
     return (1+x)*(N1*N2 )/D**3
 
 
-@vectorize([float64(float64, float64, float64)], target='parallel')
+#@vectorize([float64(float64, float64, float64)], target='parallel')
+@vectorize([float64(float64, float64, float64)])
 def Fx_case_B_Chris(z, x, beta):
     """
     CHRIS VERSION WITH NO (1+x) in the first term.
