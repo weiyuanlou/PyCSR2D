@@ -5,7 +5,7 @@ from scipy.optimize import root_scalar
 from scipy import integrate
 
     
-from csr2d.core2 import psi_x0, psi_s, Fx_case_B_Chris, psi_x0_hat, psi_x0_SC
+from csr2d.core2 import psi_x0, psi_s, Fx_case_B_Chris, psi_x0_hat, Es_case_B 
 
 
 def symmetric_vec(n, d):
@@ -56,19 +56,21 @@ def green_mesh(density_shape, deltas, rho=None, gamma=None, offset=(0,0,0), comp
     vecs[0] = rho_sign*vecs[0] # Flip sign of x
     meshes = np.meshgrid(*vecs, indexing='ij')
 
-    beta = np.sqrt(1 - 1 / gamma ** 2)
-    beta2 = 1-1/gamma**2
     
-    if component == 'x':
-        green = rho_sign*psi_x0(*meshes, beta, dz, dx)      
-    elif component == 'xhat':
-        green = rho_sign*psi_x0_hat(*meshes, beta, dz, dx)                   
-    elif component == 's':
+    if component == 'psi_x':
+        green = rho_sign*psi_x0(*meshes, gamma, dz, dx)      
+    elif component == 'psi_x_hat':
+        green = rho_sign*psi_x0_hat(*meshes, gamma, dz, dx)                   
+    elif component == 'psi_s':
         green = psi_s(*meshes, gamma)
         
-    elif component in ['Fx_IGF']:
-        
-        F = Fx_case_B_Chris
+    elif component in ['Fx_IGF', 'Es_IGF']:
+     
+        if component == 'Fx_IGF':
+            F = Fx_case_B_Chris
+        else:
+            F = Es_case_B 
+            
 
         # Flat meshes
         Z = meshes[0].flatten()
@@ -87,7 +89,7 @@ def green_mesh(density_shape, deltas, rho=None, gamma=None, offset=(0,0,0), comp
         
 
         # evaluate special
-        f3 = lambda z, x: IGF_z(F, z, x, dz, dx, beta)/dz
+        f3 = lambda z, x: IGF_z(F, z, x, dz, dx, gamma)/dz
         
         res = map(f3, Z_special, X_special)
         G_short = np.array(list(res))
@@ -95,7 +97,7 @@ def green_mesh(density_shape, deltas, rho=None, gamma=None, offset=(0,0,0), comp
         print(f'Done. Starting midpoint method...')
         
         # Simple midpoint evaluation
-        G = F(Z, X, beta)
+        G = F(Z, X, gamma)
         # Fill with IGF
         G[ix_for_IGF] = G_short
         
@@ -109,14 +111,14 @@ def green_mesh(density_shape, deltas, rho=None, gamma=None, offset=(0,0,0), comp
     
 
     
-def IGF_z(func, z, x, dz, dx, beta):
+def IGF_z(func, z, x, dz, dx, gamma):
     """
     Special Integrated Green Function (IGF) in the z direction only
     
     """
     
     #func_x = lambda x: func(z, x, gamma)
-    func_z = lambda z: func(z, x, beta)
+    func_z = lambda z: func(z, x, gamma)
 
     if abs(z) < 1e-14:
         if (abs(x) < 1e-14):
