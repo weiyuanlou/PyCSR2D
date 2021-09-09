@@ -600,6 +600,7 @@ def Es_case_A(z, x, gamma, alp):
 @vectorize([float64(float64, float64, float64, float64)])
 def Fx_case_A(z, x, gamma, alp):
     """
+    (1+x) correction for Ex included.
     Eq.(?) from Ref[2] with no constant factor e**2/gamma**2/rho**2.
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
@@ -616,12 +617,18 @@ def Fx_case_A(z, x, gamma, alp):
     kap = (2*(alp - z) + eta)/beta  # kappa for case A
     #kap = sqrt( eta**2 + x**2 + 4*(1+x)*sin(alp)**2 + 2*eta*(1+x)*sin2a) 
     
-    N1 = (1 + beta2)*(1+x)
-    N2 = -(1 + beta2*(1+x)**2)*cos2a
-    N3 = (eta - beta*kap)*sin2a
+    # Yunhai's version
+    #N1 = (1 + beta2)*(1+x)
+    #N2 = -(1 + beta2*(1+x)**2)*cos2a
+    #N3 = (eta - beta*kap)*sin2a
+    #return (N1+N2+N3)/D**3
+    
+    N_Ex = 1+x - cos2a + (eta - beta*kap)*sin2a
+    N_By = beta*( (1+x)*cos2a - 1 )
+    
     D = kap - beta*(eta + (1+x)*sin2a)
     
-    return (N1+N2+N3)/D**3
+    return (1+x)*(N_Ex - beta*N_By)/D**3
 
 
 ########### Case B #################################
@@ -782,6 +789,7 @@ def Es_case_C(z, x, gamma, alp, lamb):
 @vectorize([float64(float64, float64, float64, float64, float64)])
 def Fx_case_C(z, x, gamma, alp, lamb):
     """
+    (1+x) correction for Ex included.
     Eq.(?) from Ref[2] with no constant factor e**2/gamma**2/rho**2.
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
@@ -797,12 +805,18 @@ def Fx_case_C(z, x, gamma, alp, lamb):
     kap = (2*(alp - z) + eta + lamb)/beta # kappa for case C
     #kap = sqrt( lamb**2 + eta**2 + x**2 + 4*(1+x)*sin(alp)**2 + 2*(lamb + eta*(1+x))*sin2a + 2*lamb*eta*cos2a)
     
-    N1 = (1 + beta2)*(1+x)
-    N2 = -(1 + beta2*(1+x)**2)*cos2a
-    N3 = (eta - beta*kap + beta2*lamb*(1+x))*sin2a
+    #N1 = (1 + beta2)*(1+x)
+    #N2 = -(1 + beta2*(1+x)**2)*cos2a
+    #N3 = (eta - beta*kap + beta2*lamb*(1+x))*sin2a
+    #return (N1+N2+N3)/D**3
+
+    N_Ex = 1+x - cos2a + (eta - beta*kap)*sin2a
+    N_By = beta*( (1+x)*cos2a - 1 - lamb*sin2a )
+    
     D = kap - beta*(eta + lamb*cos2a + (1+x)*sin2a)
     
-    return (N1+N2+N3)/D**3
+    return (1+x)*(N_Ex - beta*N_By)/D**3
+    
 
 
 ############################### Case D #################################
@@ -865,3 +879,36 @@ def Es_case_D(z, x, gamma, lamb):
     D = kap - beta*(lamb*cos2a + (1+x)*sin2a)
     
     return N1*N2/D**3
+
+
+@vectorize([float64(float64, float64, float64, float64)])
+def Fx_case_D(z, x, gamma, lamb):
+    """
+    (1+x) correction included
+    Eq.(17) from Ref[1] with zeta set to zero, and no constant factor e*beta**2/rho**2.
+    Note that 'x' here corresponds to 'chi = x/rho', 
+    and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
+    """
+  
+    if z == 0 and x == 0:
+        return 0
+    
+    beta2 = 1-1/gamma**2
+    beta = sqrt(beta2)
+    
+    alp = alpha(z, x, beta2)
+    sin2a = sin(2*alp)
+    cos2a = cos(2*alp) 
+
+    kap = (2*(alp - z) + lamb)/beta # kappa for case D
+    
+    # SC term with prefactor 1/(gamma*beta)^2 = 1/(gamma^2-1)
+    #NSC = (1 + beta2 - beta*kap*sin2a + x - cos2a*(1 + beta2*(1 + x)) ) / (gamma**2-1) 
+
+
+    N_Ex = (lamb + sin2a) * (lamb*cos2a + (1+x)*sin2a - beta*kap)
+    N_By = kap * (lamb*cos2a + (1+x)*sin2a - beta*kap)
+    
+    D = kap - beta*(lamb*cos2a + (1+x)*sin2a)
+    
+    return (1+x)*(N_Ex - beta*N_By)/D**3

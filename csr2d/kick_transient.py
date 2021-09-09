@@ -1,6 +1,6 @@
 from csr2d.deposit import histogram_cic_2d
 from csr2d.central_difference import central_difference_z
-from csr2d.core2 import psi_sx, psi_s, psi_x0, Es_case_B0, Es_case_A, Fx_case_A, Es_case_C, Fx_case_C, Es_case_D
+from csr2d.core2 import psi_sx, psi_s, psi_x0, Es_case_A, Fx_case_A, Es_case_C, Fx_case_C
 from csr2d.convolution import fftconvolve2
 
 import numpy as np
@@ -68,7 +68,7 @@ def compute_dist_grid(z_b, x_b, weight, *, nz=100, nx=100, xlim=None, zlim=None,
 
 
 #@njit # (jit doesn't like np.meshgrid...)
-def compute_potential_grids(case, nz=100, nx=100, dz=None, dx=None, rho=None, beta=None, phi=None, phi_m=None, lamb=None):
+def compute_potential_grids(case, nz=100, nx=100, dz=None, dx=None, rho=None, gamma=None, phi=None, phi_m=None, lamb=None):
     """
     The output of the 4 cases are:
         Case A, C, D: Es_grid, Fx_grid, zvec2, xvec2
@@ -91,8 +91,8 @@ def compute_potential_grids(case, nz=100, nx=100, dz=None, dx=None, rho=None, be
 
     if   case=='A': 
         assert phi>0 , "phi (entrance angle) must be positive!!!"
-        Es_case_A_grid = Es_case_A(zm2, xm2, beta, phi/2) # Numba routines!
-        Fx_case_A_grid = Fx_case_A(zm2, xm2, beta, phi/2) # Numba routines!
+        Es_case_A_grid = Es_case_A(zm2, xm2, gamma, phi/2) # Numba routines!
+        Fx_case_A_grid = Fx_case_A(zm2, xm2, gamma, phi/2) # Numba routines!
         
         return Es_case_A_grid, Fx_case_A_grid, zvec2*2*rho, xvec2*rho
         
@@ -100,8 +100,8 @@ def compute_potential_grids(case, nz=100, nx=100, dz=None, dx=None, rho=None, be
     
     elif case=='B':
         
-        psi_s_grid = psi_s(zm2, xm2, beta) # Numba routines!
-        psi_x_grid = psi_x0(zm2, xm2, beta, abs(dx)) # Will average around 0
+        psi_s_grid = psi_s(zm2, xm2, gamma) # Numba routines!
+        psi_x_grid = psi_x0(zm2, xm2, gamma, abs(dx)) # Will average around 0
     
         return psi_s_grid, psi_x_grid, zvec2*2*rho, xvec2*rho
     
@@ -110,8 +110,8 @@ def compute_potential_grids(case, nz=100, nx=100, dz=None, dx=None, rho=None, be
         assert phi_m>0 , "phi_m must be positive!!!"
         assert lamb>0 , "lamb (exit distance over rho) must be positive!!!"
         
-        Es_case_C_grid = Es_case_C(zm2, xm2, beta, phi_m/2, lamb) # Numba routines!
-        Fx_case_C_grid = Fx_case_C(zm2, xm2, beta, phi_m/2, lamb) # Numba routines!
+        Es_case_C_grid = Es_case_C(zm2, xm2, gamma, phi_m/2, lamb) # Numba routines!
+        Fx_case_C_grid = Fx_case_C(zm2, xm2, gamma, phi_m/2, lamb) # Numba routines!
         
         return Es_case_C_grid, Fx_case_C_grid, zvec2*2*rho, xvec2*rho
     #    return green_meshes_case_C(nz, nx, dz, dx, rho=rho, beta=beta, alp=phi_m/2, lamb=lamb) 
