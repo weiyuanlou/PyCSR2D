@@ -263,7 +263,7 @@ def kappa(z, x, beta2):
 
 
 @np.vectorize
-def alpha_exact(z, x, beta2):
+def alpha_exact(z, x, beta):
     """
     Exact alpha calculation using numerical root finding.
     
@@ -271,8 +271,7 @@ def alpha_exact(z, x, beta2):
     
     Eq. (23) from Ref[1]
     """
-    beta = sqrt(beta2)
-    f = lambda a: a - beta/2*np.sqrt(x**2 + 4*(1+x)*np.sin(a)**2 ) - z
+    f = lambda a: a - beta/2 * sqrt(x**2 + 4*(1+x) * sin(a)**2 ) - z
     
     res = scipy.optimize.root_scalar(f, bracket=(-1,1))
     
@@ -369,7 +368,7 @@ def psi_s(z, x, gamma):
     out = (cos(2*alp)- 1/(1+x)) / (kap - beta * (1+x) * sin(2*alp))    
     
     # Add SC term
-    out += -1 / (  (gamma**2-1)*(1+x)*(kap - beta*(1+x)*sin(2*alp))  )    
+    # out += -1 / (  (gamma**2-1)*(1+x)*(kap - beta*(1+x)*sin(2*alp))  )    
         
     return out
 
@@ -650,7 +649,9 @@ def Es_case_B(z, x, gamma):
     beta2 = 1-1/gamma**2
     beta = sqrt(beta2)
     
-    alp = alpha(z, x, beta2)
+    #alp = alpha(z, x, beta2)
+    alp = alpha_exact_case_B_brentq(z, x, beta)
+    
     sin2a = sin(2*alp)
     cos2a = cos(2*alp) 
 
@@ -664,8 +665,8 @@ def Es_case_B(z, x, gamma):
     # SC term with prefactor 1/(gamma*beta)^2 = 1/(gamma^2-1)
     NSC = (sin2a - beta*kap *cos2a)/ (gamma**2-1) 
     
-    # return (N1*N2)/D**3
-    return (N1*N2 + NSC)/D**3
+    return (N1*N2)/D**3
+    #return (N1*N2 + NSC)/D**3
 
 
 @vectorize([float64(float64, float64, float64)], target='parallel')
@@ -828,7 +829,7 @@ def alpha_exact_case_D(z, x, beta, lamb):
 
     """
     #beta = np.sqrt(beta2)
-    f = lambda a: a + 1/2 * (lamb - beta*sqrt(lamb**2 + x**2 + 4*(1+x)*sin(a)**2 + 2*lamb*sin(2*a)) - z)
+    f = lambda a: a + 1/2 * (lamb - beta*sqrt(lamb**2 + x**2 + 4*(1+x)*sin(a)**2 + 2*lamb*sin(2*a))) - z
     
     res = scipy.optimize.root_scalar(f, bracket=(-1,1))
     
@@ -836,7 +837,7 @@ def alpha_exact_case_D(z, x, beta, lamb):
 
 @njit
 def f_root_case_D(a, z, x, beta, lamb):
-    return a + 1/2 * (lamb - beta* sqrt(lamb**2 + x**2 + 4*(1+x)*sin(a)**2 + 2*lamb*sin(2*a)) - z)
+    return a + 1/2 * (lamb - beta* sqrt(lamb**2 + x**2 + 4*(1+x)*sin(a)**2 + 2*lamb*sin(2*a))) - z
 
 
 #@vectorize([float64(float64, float64, float64, float64)], target='parallel')
@@ -850,7 +851,7 @@ def alpha_exact_case_D_brentq(z, x, beta, lamb):
     return brentq(f_root_case_D, -1, 1, args=(z, x, beta, lamb))[0]
 
 
-#@vectorize([float64(float64, float64, float64, float64)])
+
 #@np.vectorize
 @vectorize([float64(float64, float64, float64, float64)])
 def Es_case_D(z, x, gamma, lamb):
@@ -912,3 +913,43 @@ def Fx_case_D(z, x, gamma, lamb):
     D = kap - beta*(lamb*cos2a + (1+x)*sin2a)
     
     return (1+x)*(N_Ex - beta*N_By)/D**3
+
+
+############  Case E #################
+
+@vectorize([float64(float64, float64, float64)])
+def Es_case_E(z, x, gamma):
+    """
+    Eq.(B5) from Ref[1] with no constant factor e**2/gamma**2.
+    """
+  
+    if z == 0 and x == 0:
+        return 0
+    
+    beta2 = 1-1/gamma**2
+    beta = sqrt(beta2)
+    
+    L = (z + beta*sqrt(x**2*(1-beta2) + z**2))/(1-beta2)
+    
+    S = sqrt(x**2 + L**2)
+    N1 = L - beta * S
+    D = S-beta*L
+  
+    return N1/D**3
+
+
+@vectorize([float64(float64, float64, float64)])
+def psi_s_case_E(z, x, gamma):
+    """
+    Eq.(B5) from Ref[1] with no constant factor 1/gamma**2.
+    """
+  
+    if z == 0 and x == 0:
+        return 0
+    
+    beta2 = 1-1/gamma**2
+    beta = sqrt(beta2)
+    
+    L = (z + beta*sqrt(x**2*(1-beta2) + z**2))/(1-beta2)
+    
+    return 1/(sqrt(x**2 + L**2) - beta*L)
