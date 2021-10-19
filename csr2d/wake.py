@@ -22,7 +22,7 @@ def symmetric_vec(n, d):
 
 
 
-def green_mesh(density_shape, deltas, rho=None, gamma=None, offset=(0,0,0), component='psi_s', map_f=map, phi=None, phi_m=None, lamb=None):
+def green_mesh(density_shape, deltas, rho=None, gamma=None, offset=(0,0,0), component='psi_s', map_f=map, phi=None, phi_m=None, lamb=None, debug=False):
     """
     Computes Green funcion meshes for a particular component
     These meshes are in real space (not scaled space).
@@ -50,10 +50,12 @@ def green_mesh(density_shape, deltas, rho=None, gamma=None, offset=(0,0,0), comp
     nz, nx = tuple(density_shape)
     dz, dx = tuple(deltas) # Convenience
     
-    print('component:', component)
+    if debug:
+        print('component:', component)
     # Change to internal coordinates
     if (component != 'psi_s_case_E') & (component != 'Es_case_E_IGF') :
-        print('Change to internal coordinates...')
+        if debug:
+            print('Change to internal coordinates...')
         # handle negative rho
         #rho_sign = np.sign(rho)
         #rho = abs(rho)
@@ -119,7 +121,8 @@ def green_mesh(density_shape, deltas, rho=None, gamma=None, offset=(0,0,0), comp
         ix_for_IGF = np.where(abs(Z) < dz*3.5)
         # ix_for_IGF = np.where(np.logical_and( abs(Z)<dz*2, abs(X)<dx*2 ))        
         
-        print(f'Finding IGF for {len(ix_for_IGF[0])} points...')
+        if debug:
+            print(f'Finding IGF for {len(ix_for_IGF[0])} points...')
         
         Z_special = Z[ix_for_IGF]
         X_special = X[ix_for_IGF]
@@ -128,7 +131,8 @@ def green_mesh(density_shape, deltas, rho=None, gamma=None, offset=(0,0,0), comp
         res = map(fzx, Z_special, X_special)
         G_short = np.array(list(res))
         
-        print(f'Done. Starting midpoint method...')
+        if debug:
+            print(f'Done. Starting midpoint method...')
         
         G = F(Z, X, gamma)    # Simple midpoint evaluation
         G[ix_for_IGF] = G_short   # Replace at special points with calculated IGF
