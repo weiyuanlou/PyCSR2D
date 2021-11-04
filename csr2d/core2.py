@@ -662,6 +662,8 @@ def Es_case_B(z, x, gamma):
     N2 = (1+x)*sin2a - beta*kap
     D = kap - beta*(1+x)*sin2a
     
+    #print(N1, N2, D)
+    
     # SC term with prefactor 1/(gamma*beta)^2 = 1/(gamma^2-1)
     NSC = (sin2a - beta*kap *cos2a)/ (gamma**2-1) 
     
