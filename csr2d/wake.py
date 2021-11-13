@@ -129,7 +129,7 @@ def green_mesh(density_shape, deltas, rho=None, gamma=None, offset=(0,0,0),
         X = meshes[1].flatten()
         
         # Select special points for IGF
-        ix_for_IGF = np.where(abs(Z) < dz*3.5)
+        ix_for_IGF = np.where(abs(Z) < dz*2.5)
         # ix_for_IGF = np.where(np.logical_and( abs(Z)<dz*2, abs(X)<dx*2 ))        
         
         if debug:
@@ -142,10 +142,10 @@ def green_mesh(density_shape, deltas, rho=None, gamma=None, offset=(0,0,0),
             xvec2 = vecs[1]
         
             # The spike_list can not be an numpy array since its elements have potentially different sizes
-            def find_Es_case_B_spike_x(x):
-                return find_Es_case_B_spike(x, gamma)
+            def find_case_B_spike_x(x):
+                return find_Es_or_Fx_case_B_spike(F, x, gamma)
             
-            spike_list = list(map(find_Es_case_B_spike_x, xvec2))           
+            spike_list = list(map(find_case_B_spike_x, xvec2))           
             
             fzx = lambda z, x: IGF_z_case_B(F, z, x, dz, dx, gamma, xvec2=xvec2, spike_list=spike_list)/dz  # evaluate special
         
@@ -179,12 +179,27 @@ def green_mesh(density_shape, deltas, rho=None, gamma=None, offset=(0,0,0),
         ix_for_IGF = np.where(abs(Z) < dz*3.5)
         # ix_for_IGF = np.where(np.logical_and( abs(Z)<dz*2, abs(X)<dx*2 ))        
         
-        print(f'Finding IGF for {len(ix_for_IGF[0])} points...')
+        if debug:
+            print(f'Finding IGF for {len(ix_for_IGF[0])} points...')
         
         Z_special = Z[ix_for_IGF]
         X_special = X[ix_for_IGF]
+    
+        if include_break_points == True:
+            xvec2 = vecs[1]
         
-        fzx = lambda z, x: IGF_z_case_D(F, z, x, dz, dx, gamma, lamb)/dz  # evaluate special
+            # The spike_list can not be an numpy array since its elements have potentially different sizes
+            def find_case_D_spike_x(x):
+                return find_Es_or_Fx_case_D_spike(F, x, gamma, lamb)
+            
+            spike_list = list(map(find_case_D_spike_x, xvec2))           
+            
+            fzx = lambda z, x: IGF_z_case_D(F, z, x, dz, dx, gamma, lamb, xvec2=xvec2, spike_list=spike_list)/dz  # evaluate special
+        
+        else:
+            fzx = lambda z, x: IGF_z_case_D(F, z, x, dz, dx, gamma, lamb)/dz  # evaluate special
+    
+        
         res = map(fzx, Z_special, X_special)
         G_short = np.array(list(res))
         
@@ -221,9 +236,11 @@ def IGF_z_case_B(func, z, x, dz, dx, gamma, xvec2=None, spike_list=None):
         spikes_in_dz = [zp for zp in spikes if zp < z+dz/2 and zp > z-dz/2] 
         
         # A rare situation in which too many break points are found (oscillatory curve)
-        # Only use the first 20 points ( the integrator can't take more than 100? )
-        if len(spikes_in_dz) > 20:
-            points = [z] + spikes_in_dz[0:19]       
+        # The integrator cannot take more than 100(?) of them
+        # This seems to happen for x = 0
+        # When this happens, neglect these points
+        if len(spikes_in_dz) > 10:
+            points = [z]   
         
         else:
             points = [z] + spikes_in_dz 
@@ -232,7 +249,7 @@ def IGF_z_case_B(func, z, x, dz, dx, gamma, xvec2=None, spike_list=None):
 
 
 
-def IGF_z_case_D(func, z, x, dz, dx, gamma, lamb):
+def IGF_z_case_D(func, z, x, dz, dx, gamma, lamb, xvec2=None, spike_list=None):
     """
     Special Integrated Green Function (IGF) in the z direction only
     """
@@ -240,14 +257,29 @@ def IGF_z_case_D(func, z, x, dz, dx, gamma, lamb):
     #func_x = lambda x: func(z, x, gamma)
     func_z = lambda z: func(z, x, gamma, lamb)
 
-    if abs(z) < 1e-14:
-        if (abs(x) < 1e-14):
-            return 0
+    #if abs(z) < 1e-14:
+    #    if (abs(x) < 1e-14):
+    #        return 0
 
-    return integrate.quad(func_z, z-dz/2, z+dz/2, 
-                          points = [z], 
-                          epsrel=1e-6, # Coarse
-                          limit=100)[0]   
+    points = [z]
+    
+    if spike_list != None:
+        x_index = np.argmin(np.abs(xvec2 - x))
+        spikes = spike_list[x_index]   # a list of z_poisition of the spikes at xvecs[x_index]
+        spikes_in_dz = [zp for zp in spikes if zp < z+dz/2 and zp > z-dz/2] 
+        
+        # A rare situation in which too many break points are found (oscillatory curve)
+        # The integrator cannot take more than 100(?) of them
+        # This seems to happen for x = 0
+        # When this happens, neglect these points
+        if len(spikes_in_dz) > 10:
+            points = [z]   
+        
+        else:
+            points = [z] + spikes_in_dz 
+        
+    return integrate.quad(func_z, z-dz/2, z+dz/2, points = points, epsrel=1e-6, limit=100)[0]     
+ 
 
     
 def IGF_z_case_E(func, z, x, dz, dx, gamma):
@@ -268,7 +300,10 @@ def IGF_z_case_E(func, z, x, dz, dx, gamma):
                           limit=100)[0]   
 
 
-def Es_case_B_N2(z,x,gamma):
+def case_B_denom(z,x,gamma):
+    """
+    The second numerator of Es_case_B and Fx_case_B
+    """
     
     beta2 = 1-1/gamma**2
     beta = np.sqrt(beta2)
@@ -278,31 +313,77 @@ def Es_case_B_N2(z,x,gamma):
 
     kap = (2*(alp - z))/beta # kappa for case B
     
-    return (1+x)*sin2a - beta*kap
+    return kap - beta*(1+x)*sin2a
 
 
-def find_Es_case_B_spike(xval,gamma):
+def find_Es_or_Fx_case_B_spike(func, xval, gamma):
     """
-    Return a list of z values at which Es_case_B(z,xval) has spikes
+    Return a list of z values at which Es_case_B(z,xval) has spikes.
+    func has to be either "Es_case_B" or "Fx_case_B"
     """
-    def Es_case_B_N2_z(z):
-        return Es_case_B_N2(z,xval,gamma)
+    def case_B_denom_z(z):
+        return case_B_denom(z,xval,gamma)
     
-    # First find where N2 ~ 0, a good reference point close to spike(s)
-    op = optimize.root(Es_case_B_N2_z, 0, tol=1E-6)
+    # First find where denom ~ 0, a good reference point close to spike(s)
+    op = optimize.root(case_B_denom_z, 0, tol=1E-6)
     if op.success == False:
-        #print('no N2 root found!!')
+        #print('no root found for denom!! Might be due to small gamma')
         return [0]
     
     root = op.x[0]
 
-    def Es_case_B_z(z):
-        return Es_case_B(z, xval, gamma)
+    def func_z(z):
+        return func(z, xval, gamma)
     
-    zv = np.linspace( root - 2E-11, root + 2E-11, 2001 ) # The range and resolution are subjected to changes...
-    peak_ix = np.union1d(find_peaks( Es_case_B_z(zv))[0], find_peaks( -Es_case_B_z(zv))[0])
+    # The range and resolution are subjected to changes...
+    zv = np.linspace( root - 2E-11, root + 2E-11, 2001 ) 
+    peak_ix = np.union1d(find_peaks( func_z(zv))[0], find_peaks( -func_z(zv))[0])
     
     return list(zv[peak_ix])
+
+
+def case_D_denom(z, x, gamma, lamb):
+    
+    beta2 = 1-1/gamma**2
+    beta = np.sqrt(beta2)
+
+    alp = alpha_exact_case_D_brentq(z, x, beta, lamb)
+    
+    sin2a = np.sin(2*alp)
+    cos2a = np.cos(2*alp) 
+
+    kap = (2*(alp - z) + lamb)/beta # kappa for case D
+
+    return kap - beta*(lamb*cos2a + (1+x)*sin2a)
+
+
+def find_Es_or_Fx_case_D_spike(func, xval, gamma, lamb):
+    """
+    Return a list of z values at which Es_case_D(z,xval) has spikes
+    func has to be either "Es_case_D" or "Fx_case_D"
+    """
+    
+    def case_D_denom_z(z):
+        return case_D_denom(z, xval, gamma, lamb)
+    
+    # First find where denom ~ 0, and we are close to spike
+    op = optimize.root(case_D_denom_z, 0, tol=1E-6)
+    if op.success == False:
+        #print('no root found for denom!! Might be due to small gamma')
+        return np.array([0])
+    
+    root = op.x[0]
+
+    def func_z(z):
+        return func(z, xval, gamma, lamb)
+    
+    zv = np.linspace( root - 2E-11, root + 2E-11, 2001 )
+    peak_ix = np.union1d(find_peaks( func_z(zv))[0], find_peaks( -func_z(zv))[0])
+    
+    return list(zv[peak_ix])
+
+
+
 
 
 ## ============== Below are higher level functions ===================================

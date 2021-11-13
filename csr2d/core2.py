@@ -707,7 +707,7 @@ def Fx_case_B(z, x, gamma):
 def Fx_case_B_Chris(z, x, gamma):
     """
     CHRIS VERSION WITH an EXTRA (1+x) in the first term.
-    The SC term INCLUDED,
+    The SC term is included,
     Eq.(17) from Ref[1] with zeta set to zero, and no constant factor e*beta**2/rho**2.
     Note that 'x' here corresponds to 'chi = x/rho', 
     and 'z' here corresponds to 'xi = z/2/rho' in the paper. 
@@ -730,15 +730,12 @@ def Fx_case_B_Chris(z, x, gamma):
     N2 = (1+x)*sin2a - beta*kap
     D = kap - beta*(1+x)*sin2a
     
-    # return (1+x)*(N1*N2 )/D**3
+    #out =  (1+x)*(N1*N2 )/D**3
 
-    # SC term with prefactor 1/(gamma*beta)^2 = 1/(gamma^2-1)
+    ### SC term with prefactor 1/(gamma*beta)^2 = 1/(gamma^2-1)
     NSC = (1 + beta2 - beta*kap*sin2a + x - cos2a*(1 + beta2*(1 + x)) ) / (gamma**2-1) 
-
-    # Total force
-    Fx_total =  (1+x)*(N1*N2 + NSC)/D**3
-
-    return Fx_total
+    out =  (1+x)*(N1*N2 + NSC)/D**3
+    return out
 
 ############# Case C ####################################
 @vectorize([float64(float64, float64, float64, float64, float64)])

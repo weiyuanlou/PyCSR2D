@@ -41,6 +41,7 @@ def csr2d_kick_calc_transient(
     zlim=None,
     species="electron",
     imethod='map_coordinates',
+    include_break_points=True,
     debug=False,
 ):
     """
@@ -153,9 +154,9 @@ def csr2d_kick_calc_transient(
 
     t3 = time.time()
 
-    Es_case_B_grid_IGF = green_mesh((nz, nx), (dz, dx), rho=rho, gamma=gamma, component= 'Es_case_B_IGF')
-    Fx_case_B_grid_IGF = green_mesh((nz, nx), (dz, dx), rho=rho, gamma=gamma, component= 'Fx_case_B_IGF')
-
+    Es_case_B_grid_IGF = green_mesh((nz, nx), (dz, dx), rho=rho, gamma=gamma, component='Es_case_B_IGF', include_break_points=include_break_points)
+    Fx_case_B_grid_IGF = green_mesh((nz, nx), (dz, dx), rho=rho, gamma=gamma, component='Fx_case_B_IGF', include_break_points=include_break_points)
+                       
     if debug:
         t4 = time.time()
         print("Computing case B field grids takes:", t4 - t3, "s")
@@ -168,7 +169,6 @@ def csr2d_kick_calc_transient(
         
         Ws_grid = (beta ** 2 / abs(rho)) * (conv_s) * (dz * dx)
         Wx_grid = (beta ** 2 / abs(rho)) * (conv_x) * (dz * dx)
-        
     else: 
         Es_case_A_grid = green_mesh((nz, nx), (dz, dx), rho=rho, gamma=gamma, component= 'Es_case_A', phi = phi, debug=False)
         Fx_case_A_grid = green_mesh((nz, nx), (dz, dx), rho=rho, gamma=gamma, component= 'Fx_case_A', phi = phi, debug=False)
@@ -262,9 +262,10 @@ def csr2d_kick_calc_transient(
     return result
 
 
-def track_bend_with_2d_csr_transient(Pin, p0c=None, gamma=None, L=0, g=0, g_err=0, N_step=20, s0=0, nz=200, nx=200, zlim=None, xlim=None,
-                           CSR_on=True, steady_state=False, CSR_1D_only=False, energy_kick_on=True, xp_kick_on=True, bend_name='the bend', 
-                           debug=True, keep_Pin=True, save_all_P_h5=None, save_all_P=False, save_all_wake=False, bend_track_parallel=True):
+def track_bend_with_2d_csr_transient(Pin, p0c=None, gamma=None, L=0, g=0, g_err=0, N_step=20, s0=0, nz=200, nx=200, 
+                                     zlim=None, xlim=None,CSR_on=True, steady_state=False, CSR_1D_only=False, 
+                                     energy_kick_on=True, xp_kick_on=True, bend_name='the bend', include_break_points=True,
+                                     debug=True, keep_Pin=True, save_all_P_h5=None, save_all_P=False, save_all_wake=False, bend_track_parallel=True):
     """
     Calculates the 2D CSR kick on a set of particles with positions `z_b`, `x_b` and charges `charges`.
     Tracks a bunch thorugh a bending magnet
@@ -391,8 +392,9 @@ def track_bend_with_2d_csr_transient(Pin, p0c=None, gamma=None, L=0, g=0, g_err=
                 if debug:
                     print(f'Begin computing transient wakes at entrance angle phi = {phi}')
                 csr_data = csr2d_kick_calc_transient(beam[4], beam[0], charges, gamma=gamma, rho=rho,
-                                           phi=phi, nz=nz, nx=nx, steady_state=steady_state, debug=debug)
-                              
+                                                     phi=phi, nz=nz, nx=nx, steady_state=steady_state, 
+                                                     include_break_points=include_break_points, debug=debug)
+                             
                 if (energy_kick_on):
                     print('Applying energy kick...')
                     delta_kick = csr_data['ddelta_ds'] 
